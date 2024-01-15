@@ -1,0 +1,75 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "← Swipe left to delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "← 左扫删除"
+          }
+        }
+      }
+    },
+    "→ Swipe right to mark done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "→ 右扫完成"
+          }
+        }
+      }
+    },
+    "↓ Pull down to create a new" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ 下拉页面新建事项"
+          }
+        }
+      }
+    },
+    "Delete" : {
+
+    },
+    "Done" : {
+
+    },
+    "Pin" : {
+
+    },
+    "Pull down to add a to-do" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下拉页面新建事项"
+          }
+        }
+      }
+    },
+    "To Do" : {
+
+    },
+    "Type in here" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "记一个"
+          }
+        }
+      }
+    },
+    "Unpin" : {
+
+    }
+  },
+  "version" : "1.0"
+}
