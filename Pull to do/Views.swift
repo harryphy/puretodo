@@ -140,6 +140,7 @@ struct DonePage: View {
     @Binding var items: [TodoItem]
     @Binding var doneItems: [TodoItem]
     var saveData: () -> Void  // 保存数据的闭包
+    let categories: [Category]  // 分类列表
     @State private var showDetailView = false
     @State private var selectedDetailItem: TodoItem?
     @Environment(\.presentationMode) var presentationMode // 用于关闭视图
@@ -359,6 +360,18 @@ struct DonePage: View {
         var undoneItem = item
         undoneItem.isDone = false
         undoneItem.doneDate = nil
+        
+        // 检查事项所属的分类是否还存在，如果不存在则将其分类ID设为默认的"To Do"分类
+        if let categoryId = undoneItem.categoryId {
+            let categoryExists = categories.contains { $0.id == categoryId }
+            if !categoryExists {
+                // 分类不存在，找到默认的"To Do"分类
+                if let toDoCategory = categories.first(where: { $0.name == "To Do" }) {
+                    undoneItem.categoryId = toDoCategory.id
+                }
+            }
+        }
+        
         items.insert(undoneItem, at: 0)
         saveData()
         let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()

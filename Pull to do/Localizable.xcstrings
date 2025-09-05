@@ -863,6 +863,9 @@
     "Are you sure you want to delete \"%@\"?" : {
 
     },
+    "Are you sure you want to delete this category?" : {
+
+    },
     "Cancel" : {
 
     },
@@ -1177,6 +1180,9 @@
 
     },
     "Delete Category" : {
+
+    },
+    "Enter a new name for this category." : {
 
     },
     "Enter category name" : {
@@ -2138,6 +2144,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "子事項"
+          }
+        }
+      }
+    },
+    "This category contains %lld unfinished item%@. Deleting the category will also delete all unfinished items. Are you sure you want to continue?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This category contains %1$lld unfinished item%2$@. Deleting the category will also delete all unfinished items. Are you sure you want to continue?"
           }
         }
       }

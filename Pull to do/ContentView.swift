@@ -215,6 +215,8 @@ struct TodoItemRowView: View {
         .background(Color.white)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
+                let generator = UIImpactFeedbackGenerator(style: .medium)
+                generator.impactOccurred()
                 onDelete()
             } label: {
                 Label("", systemImage: "trash.fill")
@@ -223,6 +225,8 @@ struct TodoItemRowView: View {
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {
+                let generator = UIImpactFeedbackGenerator(style: .heavy)
+                generator.impactOccurred()
                 onMarkDone()
             } label: {
                 Label("", systemImage: "checkmark")
@@ -230,6 +234,8 @@ struct TodoItemRowView: View {
             .tint(.green)
             if isPinned {
                 Button {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
                     onUnpin()
                 } label: {
                     Label("", systemImage: "pin.slash.fill")
@@ -237,6 +243,8 @@ struct TodoItemRowView: View {
                 .tint(.orange)
             } else {
                 Button {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
                     onPin()
                 } label: {
                     Label("", systemImage: "pin.fill")
@@ -244,6 +252,8 @@ struct TodoItemRowView: View {
                 .tint(.orange)
             }
             Button {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
                 onMoveToCategory()
             } label: {
                 Label("", systemImage: "arrowshape.turn.up.right.fill")
@@ -264,6 +274,11 @@ struct ContentView: View {
     @State private var showCategoryDrawer = false
     @State private var isGestureActive = false
     @State private var showInputView = false
+    @State private var showCategoryOptionsModal = false
+    @State private var showCategoryRenameAlert = false
+    @State private var newCategoryName = ""
+    @State private var showDeleteCategoryAlert = false
+    @State private var unfinishedItemsCount = 0
     
     // 辅助方法：创建输入视图
     @ViewBuilder
@@ -664,21 +679,37 @@ struct ContentView: View {
     // 导航栏右侧按钮
     @ViewBuilder
     private var navigationBarTrailingButton: some View {
-        NavigationLink(destination: DonePage(items: $items, doneItems: $doneItems, saveData: saveData)
-            .onAppear {
-                isInDonePage = true
+        HStack(spacing: 8) {
+            // 如果不是"To Do"分类，显示三个点的more图标
+            if let selectedCategory = selectedCategory, selectedCategory.name != "To Do" {
+                Button(action: {
+                    showCategoryOptionsModal = true
+                }) {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.primary)
+                        .frame(width: 24, height: 24)
+                        .rotationEffect(.degrees(90))
+                }
             }
-            .onDisappear {
-                isInDonePage = false
+            
+            // Done页面图标
+            NavigationLink(destination: DonePage(items: $items, doneItems: $doneItems, saveData: saveData, categories: categories)
+                .onAppear {
+                    isInDonePage = true
+                }
+                .onDisappear {
+                    isInDonePage = false
+                }
+            ) {
+                Image("logoshape")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 28)
+                    .padding(.top, 14)
             }
-        ) {
-            Image("logoshape")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 28)
-                .padding(.top, 14)
-                .padding(.trailing, 10)
         }
+        .padding(.trailing, 10)
     }
     
     // 分类抽屉遮罩
@@ -856,6 +887,32 @@ struct ContentView: View {
                 )
             }
         }
+        .sheet(isPresented: $showCategoryOptionsModal) {
+            categoryOptionsModalView()
+        }
+        .alert("Change Category Name", isPresented: $showCategoryRenameAlert) {
+            TextField("Category Name", text: $newCategoryName)
+            Button("Cancel", role: .cancel) {
+                newCategoryName = ""
+            }
+            Button("Save") {
+                renameCategory()
+            }
+        } message: {
+            Text("Enter a new name for this category.")
+        }
+        .alert("Delete Category", isPresented: $showDeleteCategoryAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteCategoryWithItems()
+            }
+        } message: {
+            if unfinishedItemsCount > 0 {
+                Text("This category contains \(unfinishedItemsCount) unfinished item\(unfinishedItemsCount == 1 ? "" : "s"). Deleting the category will also delete all unfinished items. Are you sure you want to continue?")
+            } else {
+                Text("Are you sure you want to delete this category?")
+            }
+        }
         .onChange(of: categories) { _ in
             DataStore.shared.saveCategories(categories)
         }
@@ -999,6 +1056,151 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - 分类选项模态窗口
+    @ViewBuilder
+    private func categoryOptionsModalView() -> some View {
+        if #available(iOS 16.4, *) {
+            VStack(spacing: 0) {
+                // 顶部拖拽指示器
+                VStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: 2.5)
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 36, height: 5)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
+                    
+                    // 向下箭头图标
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 20)
+                }
+                
+                // 选项列表
+                VStack(spacing: 0) {
+                    // Change Category Name 选项
+                    Button(action: {
+                        showCategoryOptionsModal = false
+                        newCategoryName = selectedCategory?.name ?? ""
+                        showCategoryRenameAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.blue)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Change Category Name")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                    }
+                    
+                    Divider()
+                        .padding(.horizontal, 20)
+                    
+                    // Delete Category 选项
+                    Button(action: {
+                        showCategoryOptionsModal = false
+                        checkAndDeleteCategory()
+                    }) {
+                        HStack {
+                            Image(systemName: "trash")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.red)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Delete Category")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.red)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                    }
+                }
+                
+                Spacer()
+            }
+            .presentationDetents([.fraction(0.5)])
+            .presentationCornerRadius(30)
+        } else {
+            // Fallback for earlier iOS versions
+            VStack(spacing: 0) {
+                // 顶部拖拽指示器
+                VStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: 2.5)
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 36, height: 5)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
+                    
+                    // 向下箭头图标
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 20)
+                }
+                
+                // 选项列表
+                VStack(spacing: 0) {
+                    // Change Category Name 选项
+                    Button(action: {
+                        showCategoryOptionsModal = false
+                        newCategoryName = selectedCategory?.name ?? ""
+                        showCategoryRenameAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.blue)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Change Category Name")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                    }
+                    
+                    Divider()
+                        .padding(.horizontal, 20)
+                    
+                    // Delete Category 选项
+                    Button(action: {
+                        showCategoryOptionsModal = false
+                        checkAndDeleteCategory()
+                    }) {
+                        HStack {
+                            Image(systemName: "trash")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.red)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Delete Category")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.red)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                    }
+                }
+                
+                Spacer()
+            }
+        }
+    }
+    
     // MARK: - 数据操作方法
     
     private func saveData() {
@@ -1008,6 +1210,156 @@ struct ContentView: View {
     
     private func refreshWidget() {
         WidgetCenter.shared.reloadTimelines(ofKind: "TodoWidget")
+    }
+    
+    // MARK: - 分类管理方法
+    
+    private func renameCategory() {
+        guard let selectedCategory = selectedCategory,
+              !newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+        
+        let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // 检查是否已存在同名分类
+        if categories.contains(where: { $0.name == trimmedName && $0.id != selectedCategory.id }) {
+            // 可以在这里添加错误提示
+            return
+        }
+        
+        // 更新分类名称
+        if let index = categories.firstIndex(where: { $0.id == selectedCategory.id }) {
+            categories[index].name = trimmedName
+            self.selectedCategory = categories[index]
+        }
+        
+        newCategoryName = ""
+    }
+    
+    private func checkAndDeleteCategory() {
+        guard let selectedCategory = selectedCategory,
+              selectedCategory.name != "To Do" else {
+            return
+        }
+        
+        // 检查该分类中是否有未完成的事项
+        let unfinishedCount = items.filter { $0.categoryId == selectedCategory.id }.count +
+                             pinnedItems.filter { $0.categoryId == selectedCategory.id }.count
+        
+        unfinishedItemsCount = unfinishedCount
+        
+        if unfinishedCount > 0 {
+            // 有未完成事项，显示确认对话框
+            showDeleteCategoryAlert = true
+        } else {
+            // 没有未完成事项，直接删除分类
+            deleteCategoryOnly()
+        }
+    }
+    
+    private func deleteCategoryWithItems() {
+        guard let selectedCategory = selectedCategory,
+              selectedCategory.name != "To Do" else {
+            return
+        }
+        
+        // 删除该分类下的所有未完成事项
+        items.removeAll { $0.categoryId == selectedCategory.id }
+        pinnedItems.removeAll { $0.categoryId == selectedCategory.id }
+        
+        // 将已完成事项移动到"To Do"分类
+        let toDoCategory = categories.first { $0.name == "To Do" }
+        for i in 0..<doneItems.count {
+            if doneItems[i].categoryId == selectedCategory.id {
+                doneItems[i].categoryId = toDoCategory?.id
+            }
+        }
+        
+        // 删除分类
+        categories.removeAll { $0.id == selectedCategory.id }
+        
+        // 切换到"To Do"分类
+        self.selectedCategory = toDoCategory
+        
+        // 保存数据
+        saveData()
+    }
+    
+    private func deleteCategoryOnly() {
+        guard let selectedCategory = selectedCategory,
+              selectedCategory.name != "To Do" else {
+            return
+        }
+        
+        // 将分类中的所有事项移动到"To Do"分类
+        let toDoCategory = categories.first { $0.name == "To Do" }
+        
+        // 更新所有属于该分类的事项
+        for i in 0..<items.count {
+            if items[i].categoryId == selectedCategory.id {
+                items[i].categoryId = toDoCategory?.id
+            }
+        }
+        
+        for i in 0..<pinnedItems.count {
+            if pinnedItems[i].categoryId == selectedCategory.id {
+                pinnedItems[i].categoryId = toDoCategory?.id
+            }
+        }
+        
+        for i in 0..<doneItems.count {
+            if doneItems[i].categoryId == selectedCategory.id {
+                doneItems[i].categoryId = toDoCategory?.id
+            }
+        }
+        
+        // 删除分类
+        categories.removeAll { $0.id == selectedCategory.id }
+        
+        // 切换到"To Do"分类
+        self.selectedCategory = toDoCategory
+        
+        // 保存数据
+        saveData()
+    }
+    
+    private func deleteCategory() {
+        guard let selectedCategory = selectedCategory,
+              selectedCategory.name != "To Do" else {
+            return
+        }
+        
+        // 将分类中的事项移动到"To Do"分类
+        let toDoCategory = categories.first { $0.name == "To Do" }
+        
+        // 更新所有属于该分类的事项
+        for i in 0..<items.count {
+            if items[i].categoryId == selectedCategory.id {
+                items[i].categoryId = toDoCategory?.id
+            }
+        }
+        
+        for i in 0..<pinnedItems.count {
+            if pinnedItems[i].categoryId == selectedCategory.id {
+                pinnedItems[i].categoryId = toDoCategory?.id
+            }
+        }
+        
+        for i in 0..<doneItems.count {
+            if doneItems[i].categoryId == selectedCategory.id {
+                doneItems[i].categoryId = toDoCategory?.id
+            }
+        }
+        
+        // 删除分类
+        categories.removeAll { $0.id == selectedCategory.id }
+        
+        // 切换到"To Do"分类
+        self.selectedCategory = toDoCategory
+        
+        // 保存数据
+        saveData()
     }
     
     private func deleteItem(item: TodoItem) {
@@ -1087,15 +1439,34 @@ struct ContentView: View {
     
     
     private func showItemDetail(for id: UUID) {
+        var targetItem: TodoItem?
+        
+        // 查找事项
         if let item = items.first(where: { $0.id == id }) {
-            self.editingItem = item
-            self.isCreatingNewItem = false // Ensure this is set to false
-            self.showInputView = true
+            targetItem = item
         } else if let pinnedItem = pinnedItems.first(where: { $0.id == id }) {
-            self.editingItem = pinnedItem
-            self.isCreatingNewItem = false // Ensure this is set to false
-            self.showInputView = true
+            targetItem = pinnedItem
         }
+        
+        guard let item = targetItem else { return }
+        
+        // 如果事项有分类ID，先切换到对应分类
+        if let categoryId = item.categoryId {
+            if let targetCategory = categories.first(where: { $0.id == categoryId }) {
+                // 切换到目标分类
+                selectedCategory = targetCategory
+            }
+        } else {
+            // 如果事项没有分类ID，切换到"To Do"分类（默认分类）
+            if let toDoCategory = categories.first(where: { $0.name == "To Do" }) {
+                selectedCategory = toDoCategory
+            }
+        }
+        
+        // 显示事项详情
+        self.editingItem = item
+        self.isCreatingNewItem = false
+        self.showInputView = true
     }
     
     // 移动事项到其他分类
