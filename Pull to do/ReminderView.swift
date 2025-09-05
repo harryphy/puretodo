@@ -1,0 +1,252 @@
+//  ReminderView.swift
+//  Pure To Do
+//
+//  Created by PHY on 2023/12/8.
+//  Version 2.4
+
+import SwiftUI
+
+// 定时提醒视图
+struct ReminderView: View {
+    @Binding var item: TodoItem
+    var onSave: (TodoItem) -> Void
+    var onCancel: () -> Void
+    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.colorScheme) var colorScheme
+    
+    @State private var selectedReminderType: ReminderType = .single
+    @State private var selectedDate: Date = Date()
+    @State private var selectedTime: Date = Date()
+    @State private var selectedWeekdays: Set<Int> = []
+    @State private var selectedDaysOfMonth: Set<Int> = []
+    
+    // For displaying days of the week
+    private let weekdaysSymbols = Calendar.current.shortWeekdaySymbols
+    
+    private func triggerHapticFeedback() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+    }
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Picker("Reminder Type", selection: $selectedReminderType) {
+                        Text("Once").tag(ReminderType.single)
+                        Text("Daily").tag(ReminderType.daily)
+                        Text("Weekly").tag(ReminderType.weekly)
+                        Text("Monthly").tag(ReminderType.monthly)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    .padding(.top, 14)
+                    .padding(.bottom, 4)
+                    
+                    if selectedReminderType == .single {
+                        Spacer().frame(height: 12)
+                        HStack {
+                            Spacer()
+                            DatePicker("", selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
+                                .datePickerStyle(WheelDatePickerStyle())
+                                .labelsHidden()
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                    } else if selectedReminderType == .daily {
+                        Spacer().frame(height: 12)
+                        HStack {
+                            Spacer()
+                            DatePicker("", selection: $selectedTime, displayedComponents: [.hourAndMinute])
+                                .datePickerStyle(WheelDatePickerStyle())
+                                .labelsHidden()
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                    } else if selectedReminderType == .weekly {
+                        VStack {
+                            WeekdaySelectionView(selectedWeekdays: $selectedWeekdays)
+                                .cornerRadius(12)
+                            Spacer().frame(height: 12)
+                            HStack {
+                                Spacer()
+                                DatePicker("", selection: $selectedTime, displayedComponents: [.hourAndMinute])
+                                    .datePickerStyle(WheelDatePickerStyle())
+                                    .labelsHidden()
+                                Spacer()
+                            }
+                        }
+                        .padding(.horizontal)
+                    } else if selectedReminderType == .monthly {
+                        VStack{
+                            DayOfMonthSelectionView(selectedDays: $selectedDaysOfMonth)
+                                .cornerRadius(12)
+                            Spacer().frame(height: 0)
+                            HStack {
+                                Spacer()
+                                DatePicker("", selection: $selectedTime, displayedComponents: [.hourAndMinute])
+                                    .datePickerStyle(WheelDatePickerStyle())
+                                    .labelsHidden()
+                                Spacer()
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+            }
+            .navigationBarTitle("", displayMode: .inline)
+            .navigationBarItems(
+                leading: VStack {
+                    Spacer().frame(height: 12)
+                    Button("Remove Reminder") {
+                        onCancel()
+                        presentationMode.wrappedValue.dismiss()
+                        triggerHapticFeedback()
+                    }
+                    .tint(.black)
+                },
+                trailing: VStack {
+                    Spacer().frame(height: 8)
+                    Button(action: {
+                        saveReminder()
+                        onSave(item)
+                        presentationMode.wrappedValue.dismiss()
+                        triggerHapticFeedback()
+                    }) {
+                        Text("Save Reminder")
+                            .fontWeight(.medium)
+                    }
+                    .tint(.black)
+                }
+            )
+            .onAppear {
+                initializeValues()
+            }
+        }.padding(.horizontal,6)
+    }
+    
+    private func initializeValues() {
+        // Initialize the view with existing reminder data if available
+        if let reminderType = item.reminderType {
+            selectedReminderType = reminderType
+        }
+        if let reminderDate = item.reminderDate {
+            selectedDate = reminderDate
+        }
+        if let reminderTime = item.reminderTime {
+            selectedTime = reminderTime
+        }
+        if let weekdays = item.reminderWeekdays {
+            selectedWeekdays = Set(weekdays)
+        }
+        if let daysOfMonth = item.reminderDaysOfMonth {
+            selectedDaysOfMonth = Set(daysOfMonth)
+        }
+    }
+    
+    private func saveReminder() {
+        item.reminderType = selectedReminderType
+        switch selectedReminderType {
+        case .single:
+            item.reminderDate = selectedDate
+            item.reminderTime = nil
+            item.reminderWeekdays = nil
+            item.reminderDaysOfMonth = nil
+        case .daily:
+            item.reminderTime = selectedTime
+            item.reminderDate = nil
+            item.reminderWeekdays = nil
+            item.reminderDaysOfMonth = nil
+        case .weekly:
+            item.reminderTime = selectedTime
+            item.reminderWeekdays = Array(selectedWeekdays)
+            item.reminderDate = nil
+            item.reminderDaysOfMonth = nil
+        case .monthly:
+            item.reminderTime = selectedTime
+            item.reminderDaysOfMonth = Array(selectedDaysOfMonth)
+            item.reminderDate = nil
+            item.reminderWeekdays = nil
+        }
+    }
+}
+
+// Helper view for selecting weekdays
+struct WeekdaySelectionView: View {
+    @Binding var selectedWeekdays: Set<Int>
+    private let weekdays = Calendar.current.shortWeekdaySymbols
+    
+    var body: some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+        LazyVGrid(columns: columns, spacing: 0) {
+            ForEach(1...7, id: \.self) { day in
+                let index = (day - 1) % 7
+                let symbol = weekdays[index]
+                Toggle(isOn: Binding(
+                    get: { selectedWeekdays.contains(day) },
+                    set: { isSelected in
+                        if isSelected {
+                            selectedWeekdays.insert(day)
+                        } else {
+                            selectedWeekdays.remove(day)
+                        }
+                    }
+                )) {
+                    Text(symbol)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .aspectRatio(1, contentMode: .fit)
+                        .font(.system(size: 14))
+                }
+                .border(Color.white, width: 0.5)
+                .toggleStyle(SelectionToggleStyle(selected: selectedWeekdays.contains(day)))
+            }
+        }
+    }
+}
+
+// Helper view for selecting days of the month
+struct DayOfMonthSelectionView: View {
+    @Binding var selectedDays: Set<Int>
+    private let days = Array(1...30)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 10)
+    
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 0) {
+            ForEach(days, id: \.self) { day in
+                Toggle(isOn: Binding(
+                    get: { selectedDays.contains(day) },
+                    set: { isSelected in
+                        if isSelected {
+                            selectedDays.insert(day)
+                        } else {
+                            selectedDays.remove(day)
+                        }
+                    }
+                )) {
+                    Text("\(day)")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .aspectRatio(1, contentMode: .fit)
+                        .font(.system(size: 14))
+                        .background(selectedDays.contains(day) ? Color.black.opacity(0.9) : Color.clear)
+                        .foregroundColor(selectedDays.contains(day) ? Color.white : Color.primary)
+                }
+                .border(Color.white, width: 0.5)
+                .toggleStyle(SelectionToggleStyle(selected: selectedDays.contains(day)))
+            }
+        }
+    }
+}
+
+struct SelectionToggleStyle: ToggleStyle {
+    var selected: Bool
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(selected ? Color.black.opacity(0.9) : Color.gray.opacity(0.2))
+            .foregroundColor(selected ? Color.white : Color.primary)
+            .onTapGesture {
+                configuration.isOn.toggle()
+            }
+    }
+}
