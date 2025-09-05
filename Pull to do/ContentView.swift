@@ -276,9 +276,11 @@ struct ContentView: View {
     @State private var showInputView = false
     @State private var showCategoryOptionsModal = false
     @State private var showCategoryRenameAlert = false
+    @State private var showCategoryRenameSheet = false
     @State private var newCategoryName = ""
     @State private var showDeleteCategoryAlert = false
     @State private var unfinishedItemsCount = 0
+    @State private var categoryNameError = ""
     
     // 辅助方法：创建输入视图
     @ViewBuilder
@@ -521,13 +523,13 @@ struct ContentView: View {
                         Text(selectedCategory?.name ?? "To Do")
                             .foregroundColor(.black)
                             .font(.system(size: 38, weight: .bold))
-                            .padding(.top, 10)
+                            .padding(.top, 14)
                             .padding(.leading, 28)
                         Spacer()
                     }
                 )
             
-            Spacer().frame(height: 32)
+            Spacer().frame(height: 30)
             Capsule().fill(Color.black).frame(height: 1.6).padding(.horizontal, 28)
             Spacer().frame(height: 3)
             Capsule().fill(Color.black).frame(height: 1).frame(maxWidth: .infinity).opacity(0.12).padding(.horizontal, 28)
@@ -679,17 +681,18 @@ struct ContentView: View {
     // 导航栏右侧按钮
     @ViewBuilder
     private var navigationBarTrailingButton: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             // 如果不是"To Do"分类，显示三个点的more图标
             if let selectedCategory = selectedCategory, selectedCategory.name != "To Do" {
                 Button(action: {
                     showCategoryOptionsModal = true
                 }) {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.primary)
-                        .frame(width: 24, height: 24)
+                        .frame(width: 20, height: 20)
                         .rotationEffect(.degrees(90))
+                        .padding(.top, 8)
                 }
             }
             
@@ -706,7 +709,7 @@ struct ContentView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 28)
-                    .padding(.top, 14)
+                    .padding(.top, 12)
             }
         }
         .padding(.trailing, 10)
@@ -716,7 +719,7 @@ struct ContentView: View {
     @ViewBuilder
     private var categoryDrawerOverlay: some View {
         if showCategoryDrawer {
-            Color.black.opacity(0.3)
+            Color.black.opacity(0.7)
                 .ignoresSafeArea()
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -808,7 +811,7 @@ struct ContentView: View {
     private var categoryDrawerButton: some View {
         if !showCategoryDrawer && !isInDonePage {
             VStack {
-                Spacer().frame(height: 48) // 与标题顶对齐
+                Spacer().frame(height: 50) // 与标题顶对齐
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         showCategoryDrawer = true
@@ -817,7 +820,7 @@ struct ContentView: View {
                     Image("littlebar")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 38, height: 38)
+                        .frame(width: 34, height: 34)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -890,6 +893,9 @@ struct ContentView: View {
         .sheet(isPresented: $showCategoryOptionsModal) {
             categoryOptionsModalView()
         }
+        .sheet(isPresented: $showCategoryRenameSheet) {
+            categoryRenameView()
+        }
         .alert("Change Category Name", isPresented: $showCategoryRenameAlert) {
             TextField("Category Name", text: $newCategoryName)
             Button("Cancel", role: .cancel) {
@@ -898,8 +904,6 @@ struct ContentView: View {
             Button("Save") {
                 renameCategory()
             }
-        } message: {
-            Text("Enter a new name for this category.")
         }
         .alert("Delete Category", isPresented: $showDeleteCategoryAlert) {
             Button("Cancel", role: .cancel) { }
@@ -908,7 +912,7 @@ struct ContentView: View {
             }
         } message: {
             if unfinishedItemsCount > 0 {
-                Text("This category contains \(unfinishedItemsCount) unfinished item\(unfinishedItemsCount == 1 ? "" : "s"). Deleting the category will also delete all unfinished items. Are you sure you want to continue?")
+                Text("This category contains \(unfinishedItemsCount) to-do item\(unfinishedItemsCount == 1 ? "" : "s"). Deleting the category will also delete all the to-do items. Are you sure you want to continue?")
             } else {
                 Text("Are you sure you want to delete this category?")
             }
@@ -1063,17 +1067,11 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 // 顶部拖拽指示器
                 VStack(spacing: 0) {
-                    RoundedRectangle(cornerRadius: 2.5)
-                        .fill(Color.gray.opacity(0.4))
-                        .frame(width: 36, height: 5)
-                        .padding(.top, 8)
-                        .padding(.bottom, 16)
-                    
-                    // 向下箭头图标
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.gray)
-                        .padding(.bottom, 20)
+                    Spacer().frame(height: 20)
+                    Image(systemName: "chevron.compact.down")
+                        .foregroundColor(.primary)
+                        .font(.system(size: 32))
+                    Spacer().frame(height: 20)
                 }
                 
                 // 选项列表
@@ -1082,12 +1080,13 @@ struct ContentView: View {
                     Button(action: {
                         showCategoryOptionsModal = false
                         newCategoryName = selectedCategory?.name ?? ""
-                        showCategoryRenameAlert = true
+                        categoryNameError = ""
+                        showCategoryRenameSheet = true
                     }) {
                         HStack {
-                            Image(systemName: "pencil")
+                            Image(systemName: "square.and.pencil")
                                 .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                                 .frame(width: 24, height: 24)
                             
                             Text("Change Category Name")
@@ -1101,7 +1100,7 @@ struct ContentView: View {
                     }
                     
                     Divider()
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 22)
                     
                     // Delete Category 选项
                     Button(action: {
@@ -1111,23 +1110,26 @@ struct ContentView: View {
                         HStack {
                             Image(systemName: "trash")
                                 .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.red)
+                                .foregroundColor(.primary)
                                 .frame(width: 24, height: 24)
                             
                             Text("Delete Category")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.red)
+                                .foregroundColor(.primary)
                             
                             Spacer()
                         }
+                        
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                     }
+                    Divider()
+                        .padding(.horizontal, 22)
                 }
                 
                 Spacer()
             }
-            .presentationDetents([.fraction(0.5)])
+            .presentationDetents([.fraction(0.3)])
             .presentationCornerRadius(30)
         } else {
             // Fallback for earlier iOS versions
@@ -1153,7 +1155,8 @@ struct ContentView: View {
                     Button(action: {
                         showCategoryOptionsModal = false
                         newCategoryName = selectedCategory?.name ?? ""
-                        showCategoryRenameAlert = true
+                        categoryNameError = ""
+                        showCategoryRenameSheet = true
                     }) {
                         HStack {
                             Image(systemName: "pencil")
@@ -1201,6 +1204,98 @@ struct ContentView: View {
         }
     }
     
+    // 分类重命名视图
+    @ViewBuilder
+    private func categoryRenameView() -> some View {
+        if #available(iOS 16.4, *) {
+            NavigationView {
+                VStack(spacing: 0) {
+                    // 顶部间距，向下移动8
+                    Spacer().frame(height: 8)
+                    
+                    VStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Category Name", text: $newCategoryName)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .onChange(of: newCategoryName) { _ in
+                                    validateCategoryName()
+                                }
+                            
+                            if !categoryNameError.isEmpty {
+                                Text(categoryNameError)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 4)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        
+                        Spacer()
+                    }
+                }
+                .navigationTitle("Change Category Name")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarItems(
+                    leading: Button("Cancel") {
+                        newCategoryName = ""
+                        categoryNameError = ""
+                        showCategoryRenameSheet = false
+                    },
+                    trailing: Button("Save") {
+                        renameCategory()
+                        showCategoryRenameSheet = false
+                    }
+                    .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !categoryNameError.isEmpty)
+                )
+            }
+            .presentationCornerRadius(30)
+        } else {
+            // Fallback for earlier iOS versions
+            NavigationView {
+                VStack(spacing: 0) {
+                    // 顶部间距，向下移动8
+                    Spacer().frame(height: 8)
+                    
+                    VStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Category Name", text: $newCategoryName)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .onChange(of: newCategoryName) { _ in
+                                    validateCategoryName()
+                                }
+                            
+                            if !categoryNameError.isEmpty {
+                                Text(categoryNameError)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 4)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        
+                        Spacer()
+                    }
+                }
+                .navigationTitle("Change Category Name")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarItems(
+                    leading: Button("Cancel") {
+                        newCategoryName = ""
+                        categoryNameError = ""
+                        showCategoryRenameSheet = false
+                    },
+                    trailing: Button("Save") {
+                        renameCategory()
+                        showCategoryRenameSheet = false
+                    }
+                    .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !categoryNameError.isEmpty)
+                )
+            }
+        }
+    }
+    
     // MARK: - 数据操作方法
     
     private func saveData() {
@@ -1214,6 +1309,30 @@ struct ContentView: View {
     
     // MARK: - 分类管理方法
     
+    private func validateCategoryName() {
+        let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmedName.isEmpty {
+            categoryNameError = ""
+            return
+        }
+        
+        // 调试信息：打印所有分类名称
+        print("Debug: All categories: \(categories.map { $0.name })")
+        print("Debug: Current selected category: \(selectedCategory?.name ?? "nil")")
+        print("Debug: Checking name: '\(trimmedName)'")
+        
+        // 检查是否已存在同名分类（排除当前正在编辑的分类，不区分大小写）
+        let existingCategory = categories.first(where: { $0.name.lowercased() == trimmedName.lowercased() && $0.id != selectedCategory?.id })
+        if existingCategory != nil {
+            print("Debug: Found duplicate category: \(existingCategory!.name)")
+            categoryNameError = "Category name already exists"
+        } else {
+            print("Debug: No duplicate found")
+            categoryNameError = ""
+        }
+    }
+    
     private func renameCategory() {
         guard let selectedCategory = selectedCategory,
               !newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -1223,9 +1342,17 @@ struct ContentView: View {
         let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
         
         // 检查是否已存在同名分类
-        if categories.contains(where: { $0.name == trimmedName && $0.id != selectedCategory.id }) {
-            // 可以在这里添加错误提示
+        print("Debug renameCategory: All categories: \(categories.map { $0.name })")
+        print("Debug renameCategory: Current selected category: \(selectedCategory.name)")
+        print("Debug renameCategory: Checking name: '\(trimmedName)'")
+        
+        let existingCategory = categories.first(where: { $0.name.lowercased() == trimmedName.lowercased() && $0.id != selectedCategory.id })
+        if existingCategory != nil {
+            print("Debug renameCategory: Found duplicate category: \(existingCategory!.name)")
+            categoryNameError = "Category name already exists"
             return
+        } else {
+            print("Debug renameCategory: No duplicate found")
         }
         
         // 更新分类名称
@@ -1235,6 +1362,7 @@ struct ContentView: View {
         }
         
         newCategoryName = ""
+        categoryNameError = ""
     }
     
     private func checkAndDeleteCategory() {

@@ -418,11 +418,11 @@ struct CategoryDrawerView: View {
                         Text("Categories")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.black)
-                            .padding(.top, 60)
+                            .padding(.top, 52)
                             .padding(.horizontal, 28)
                         
-                        Capsule().fill(Color.black).frame(height: 1.6).padding(.horizontal, 28)
-                        Capsule().fill(Color.black).frame(height: 1).frame(maxWidth: .infinity).opacity(0.12).padding(.horizontal, 28)
+                        //Capsule().fill(Color.black).frame(height: 1.6).padding(.horizontal, 28)
+                        //Capsule().fill(Color.black).frame(height: 1).frame(maxWidth: .infinity).opacity(0.12).padding(.horizontal, 28)
                     }
                     
                     // 分类列表 - To Do分类不可拖拽，其他分类支持拖拽排序
@@ -457,7 +457,7 @@ struct CategoryDrawerView: View {
                         .onMove(perform: moveOtherCategories)
                     }
                     .listStyle(PlainListStyle())
-                    .padding(.top, 20)
+                    .padding(.top, 32)
                     
                     Spacer()
                     
@@ -468,18 +468,18 @@ struct CategoryDrawerView: View {
                         HStack {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 20))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                             Text("Add Category")
                                 .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(12)
+                        .padding(.vertical, 12)
+                        //.background(Color.primary.opacity(0.1))
+                        //.cornerRadius(12)
                     }
                     .padding(.horizontal, 28)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 22)
                 }
                 .frame(width: geometry.size.width * 0.8)
                 .background(Color.white)
@@ -568,7 +568,7 @@ struct CategoryRowView: View {
             HStack(spacing: 16) {
                 // 分类名称
                 Text(category.name)
-                    .font(.system(size: 18, weight: isSelected ? .semibold : .regular))
+                    .font(.system(size: 18, weight: isSelected ? .bold : .regular))
                     .foregroundColor(.black)
                 
                 Spacer()
@@ -577,12 +577,12 @@ struct CategoryRowView: View {
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.primary)
                 }
             }
             .padding(.horizontal, 28)
-            .padding(.vertical, 16)
-            .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+            .padding(.vertical, 12)
+            //.background(isSelected ? Color.primary.opacity(0.1) : Color.clear)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
@@ -591,7 +591,6 @@ struct CategoryRowView: View {
     }
 }
 
-// 添加分类视图
 // 添加分类视图
 struct AddCategoryView: View {
     @Binding var categoryName: String
@@ -605,7 +604,7 @@ struct AddCategoryView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
+            VStack(spacing: 28) {
                 // 分类名称输入
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Category Name")
