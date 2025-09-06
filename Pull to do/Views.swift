@@ -472,6 +472,7 @@ struct CategoryDrawerView: View {
                             Text("Add Category")
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.primary)
+                            Spacer()
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -513,21 +514,42 @@ struct CategoryDrawerView: View {
                         }
                 )
         .sheet(isPresented: $showAddCategorySheet) {
-            AddCategoryView(
-                categoryName: $newCategoryName,
-                categories: categories,
-                onSave: {
-                    let newCategory = Category(name: newCategoryName)
-                    categories.append(newCategory)
-                    newCategoryName = ""
-                    showAddCategorySheet = false
-                    saveCategories()
-                },
-                onCancel: {
-                    newCategoryName = ""
-                    showAddCategorySheet = false
+            Group {
+                if #available(iOS 16.4, *) {
+                    AddCategoryView(
+                        categoryName: $newCategoryName,
+                        categories: categories,
+                        onSave: {
+                            let newCategory = Category(name: newCategoryName)
+                            categories.append(newCategory)
+                            newCategoryName = ""
+                            showAddCategorySheet = false
+                            saveCategories()
+                        },
+                        onCancel: {
+                            newCategoryName = ""
+                            showAddCategorySheet = false
+                        }
+                    )
+                    .presentationCornerRadius(30)
+                } else {
+                    AddCategoryView(
+                        categoryName: $newCategoryName,
+                        categories: categories,
+                        onSave: {
+                            let newCategory = Category(name: newCategoryName)
+                            categories.append(newCategory)
+                            newCategoryName = ""
+                            showAddCategorySheet = false
+                            saveCategories()
+                        },
+                        onCancel: {
+                            newCategoryName = ""
+                            showAddCategorySheet = false
+                        }
+                    )
                 }
-            )
+            }
         }
         }
     }
@@ -606,13 +628,12 @@ struct AddCategoryView: View {
         NavigationView {
             VStack(spacing: 28) {
                 // 分类名称输入
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Category Name")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
+                VStack(alignment: .leading, spacing: 6) {
                     
                     TextField("Enter category name", text: $categoryName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(height:36)
+                        .font(.system(size: 18))
+                        .textFieldStyle(PlainTextFieldStyle())
                         .focused($isTextFieldFocused)
                         .onChange(of: categoryName) { _ in
                             // 当用户输入时清除错误状态
@@ -621,6 +642,14 @@ struct AddCategoryView: View {
                                 errorMessage = ""
                             }
                         }
+                        .overlay(
+                            Divider()
+                                .frame(height: 0.6)
+                                .background(Color.black)
+                                .opacity(0.1)
+                                .padding(.bottom, 0)
+                            , alignment: .bottom
+                        )
                     
                     // 错误信息显示
                     if showError {
@@ -639,13 +668,18 @@ struct AddCategoryView: View {
             .navigationBarItems(
                 leading: Button("Cancel") {
                     onCancel()
-                },
+                }
+                .foregroundColor(.black)
+                .padding(.leading, 8),
                 trailing: Button("Save") {
                     validateAndSave()
                 }
+                .foregroundColor(.black)
                 .disabled(categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .padding(.trailing, 8)
             )
         }
+        .padding(.top, 8)
         .onAppear {
             isTextFieldFocused = true
         }
