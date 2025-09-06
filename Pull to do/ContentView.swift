@@ -737,7 +737,9 @@ struct ContentView: View {
             CategoryDrawerView(
                 isPresented: $showCategoryDrawer,
                 selectedCategory: $selectedCategory,
-                categories: $categories
+                categories: $categories,
+                items: $items,
+                pinnedItems: $pinnedItems
             )
             .transition(.move(edge: .leading))
             .zIndex(2)
@@ -820,7 +822,7 @@ struct ContentView: View {
                     Image("littlebar")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 34, height: 34)
+                        .frame(width: 38, height: 38)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -1161,7 +1163,7 @@ struct ContentView: View {
                         HStack {
                             Image(systemName: "pencil")
                                 .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                                 .frame(width: 24, height: 24)
                             
                             Text("Change Category Name")
@@ -1185,12 +1187,12 @@ struct ContentView: View {
                         HStack {
                             Image(systemName: "trash")
                                 .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.red)
+                                .foregroundColor(.primary)
                                 .frame(width: 24, height: 24)
                             
                             Text("Delete Category")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.red)
+                                .foregroundColor(.primary)
                             
                             Spacer()
                         }
@@ -1213,23 +1215,33 @@ struct ContentView: View {
                     // 顶部间距，向下移动8
                     Spacer().frame(height: 8)
                     
-                    VStack(spacing: 20) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            TextField("Category Name", text: $newCategoryName)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                    VStack(spacing: 28) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            TextField("Enter category name", text: $newCategoryName)
+                                .frame(height: 36)
+                                .font(.system(size: 18))
+                                .textFieldStyle(PlainTextFieldStyle())
                                 .onChange(of: newCategoryName) { _ in
                                     validateCategoryName()
                                 }
+                                .overlay(
+                                    Divider()
+                                        .frame(height: 0.6)
+                                        .background(Color.black)
+                                        .opacity(0.1)
+                                        .padding(.bottom, 0)
+                                    , alignment: .bottom
+                                )
                             
                             if !categoryNameError.isEmpty {
                                 Text(categoryNameError)
-                                    .font(.caption)
+                                    .font(.system(size: 14))
                                     .foregroundColor(.red)
-                                    .padding(.horizontal, 4)
+                                    .padding(.top, 4)
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 18)
                         
                         Spacer()
                     }
@@ -1241,14 +1253,19 @@ struct ContentView: View {
                         newCategoryName = ""
                         categoryNameError = ""
                         showCategoryRenameSheet = false
-                    },
+                    }
+                    .foregroundColor(.black)
+                    .padding(.leading, 8),
                     trailing: Button("Save") {
                         renameCategory()
                         showCategoryRenameSheet = false
                     }
+                    .foregroundColor(.black)
                     .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !categoryNameError.isEmpty)
+                    .padding(.trailing, 8)
                 )
             }
+            .padding(.top, 8)
             .presentationCornerRadius(30)
         } else {
             // Fallback for earlier iOS versions
@@ -1257,23 +1274,33 @@ struct ContentView: View {
                     // 顶部间距，向下移动8
                     Spacer().frame(height: 8)
                     
-                    VStack(spacing: 20) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            TextField("Category Name", text: $newCategoryName)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                    VStack(spacing: 28) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            TextField("Enter category name", text: $newCategoryName)
+                                .frame(height: 36)
+                                .font(.system(size: 18))
+                                .textFieldStyle(PlainTextFieldStyle())
                                 .onChange(of: newCategoryName) { _ in
                                     validateCategoryName()
                                 }
+                                .overlay(
+                                    Divider()
+                                        .frame(height: 0.6)
+                                        .background(Color.black)
+                                        .opacity(0.1)
+                                        .padding(.bottom, 0)
+                                    , alignment: .bottom
+                                )
                             
                             if !categoryNameError.isEmpty {
                                 Text(categoryNameError)
-                                    .font(.caption)
+                                    .font(.system(size: 14))
                                     .foregroundColor(.red)
-                                    .padding(.horizontal, 4)
+                                    .padding(.top, 4)
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 18)
                         
                         Spacer()
                     }
@@ -1285,14 +1312,19 @@ struct ContentView: View {
                         newCategoryName = ""
                         categoryNameError = ""
                         showCategoryRenameSheet = false
-                    },
+                    }
+                    .foregroundColor(.black)
+                    .padding(.leading, 8),
                     trailing: Button("Save") {
                         renameCategory()
                         showCategoryRenameSheet = false
                     }
+                    .foregroundColor(.black)
                     .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !categoryNameError.isEmpty)
+                    .padding(.trailing, 8)
                 )
             }
+            .padding(.top, 8)
         }
     }
     

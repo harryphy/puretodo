@@ -860,9 +860,6 @@
     "Add Category" : {
 
     },
-    "Are you sure you want to delete \"%@\"?" : {
-
-    },
     "Are you sure you want to delete this category?" : {
 
     },
@@ -1064,9 +1061,6 @@
 
     },
     "Category Name" : {
-
-    },
-    "Category: %@" : {
 
     },
     "Change Category Name" : {
@@ -1839,9 +1833,6 @@
         }
       }
     },
-    "Rename Category" : {
-
-    },
     "Restore Purchase" : {
       "localizations" : {
         "ar" : {
@@ -2154,9 +2145,6 @@
           }
         }
       }
-    },
-    "This will also delete %lld items in this category." : {
-
     },
     "To Do" : {
 

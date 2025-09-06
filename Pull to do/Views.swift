@@ -397,6 +397,8 @@ struct CategoryDrawerView: View {
     @Binding var isPresented: Bool
     @Binding var selectedCategory: Category?
     @Binding var categories: [Category]
+    @Binding var items: [TodoItem]
+    @Binding var pinnedItems: [TodoItem]
     @State private var showAddCategorySheet = false
     @State private var newCategoryName = ""
     
@@ -407,6 +409,21 @@ struct CategoryDrawerView: View {
     
     private var otherCategories: [Category] {
         categories.filter { $0.name != "To Do" }
+    }
+    
+    // 计算指定分类的待办事项数量
+    private func itemCount(for category: Category) -> Int {
+        let categoryItems = items.filter { $0.categoryId == category.id }
+        let categoryPinnedItems = pinnedItems.filter { $0.categoryId == category.id }
+        
+        // 对于"To Do"分类，还需要包含没有分类ID的老数据
+        if category.name == "To Do" {
+            let legacyItems = items.filter { $0.categoryId == nil }
+            let legacyPinnedItems = pinnedItems.filter { $0.categoryId == nil }
+            return categoryItems.count + categoryPinnedItems.count + legacyItems.count + legacyPinnedItems.count
+        }
+        
+        return categoryItems.count + categoryPinnedItems.count
     }
     
     var body: some View {
@@ -431,7 +448,8 @@ struct CategoryDrawerView: View {
                         if let todo = todoCategory {
                             CategoryRowView(
                                 category: todo,
-                                isSelected: selectedCategory?.id == todo.id
+                                isSelected: selectedCategory?.id == todo.id,
+                                itemCount: itemCount(for: todo)
                             ) {
                                 selectedCategory = todo
                                 isPresented = false
@@ -445,7 +463,8 @@ struct CategoryDrawerView: View {
                         ForEach(otherCategories) { category in
                             CategoryRowView(
                                 category: category,
-                                isSelected: selectedCategory?.id == category.id
+                                isSelected: selectedCategory?.id == category.id,
+                                itemCount: itemCount(for: category)
                             ) {
                                 selectedCategory = category
                                 isPresented = false
@@ -583,26 +602,46 @@ struct CategoryDrawerView: View {
 struct CategoryRowView: View {
     let category: Category
     let isSelected: Bool
+    let itemCount: Int
     let onTap: () -> Void
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 16) {
-                // 分类名称
-                Text(category.name)
-                    .font(.system(size: 18, weight: isSelected ? .bold : .regular))
-                    .foregroundColor(.black)
+            HStack(spacing: 0) {
+                // 选中指示器 - 放在最左侧，固定宽度
+                HStack {
+                    if isSelected {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 4))
+                            .foregroundColor(.primary)
+                    } else {
+                        // 占位符，保持对齐
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 4))
+                            .foregroundColor(.clear)
+                    }
+                }
+                .frame(width: 16) // 固定宽度，确保对齐
                 
-                Spacer()
-                
-                // 选中指示器
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 16, weight: .semibold))
+                // 主要内容区域
+                HStack(spacing: 16) {
+                    // 分类名称
+                    Text(category.name)
+                        .font(.system(size: 18, weight: isSelected ? .bold : .regular))
                         .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    // 待办事项数量（如果大于0才显示）
+                    if itemCount > 0 {
+                        Text("\(itemCount)")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(Color.black.opacity(0.25))
+                    }
                 }
             }
-            .padding(.horizontal, 28)
+            .padding(.leading, 14)
+            .padding(.trailing, 28)
             .padding(.vertical, 12)
             //.background(isSelected ? Color.primary.opacity(0.1) : Color.clear)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -709,306 +748,5 @@ struct AddCategoryView: View {
         
         // 校验通过，执行保存
         onSave()
-    }
-}
-
-// MARK: - 分类管理组件
-
-// 分类更多操作菜单
-struct CategoryMoreActionsView: View {
-    let category: Category
-    let onRenameTap: () -> Void
-    let onDeleteTap: () -> Void
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // 分类名称标题
-                VStack(spacing: 16) {
-                    Text("Category: \(category.name)")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.black)
-                        .padding(.top, 20)
-                    
-                    Divider()
-                }
-                .padding(.horizontal, 24)
-                
-                // 操作选项列表
-                VStack(spacing: 0) {
-                    // 重命名分类
-                    Button(action: {
-                        onDismiss()
-                        onRenameTap()
-                    }) {
-                        HStack(spacing: 16) {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 18))
-                                .foregroundColor(.blue)
-                                .frame(width: 24)
-                            
-                            Text("Change Category Name")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 18)
-                        .background(Color.clear)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    Divider()
-                        .padding(.leading, 24)
-                    
-                    // 删除分类
-                    Button(action: {
-                        onDismiss()
-                        onDeleteTap()
-                    }) {
-                        HStack(spacing: 16) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 18))
-                                .foregroundColor(.red)
-                                .frame(width: 24)
-                            
-                            Text("Delete Category")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.red)
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 18)
-                        .background(Color.clear)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .background(Color(.systemBackground))
-                .cornerRadius(12)
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
-                
-                Spacer()
-            }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                trailing: Button("Cancel") {
-                    onDismiss()
-                }
-                .foregroundColor(.blue)
-            )
-        }
-    }
-}
-
-// 重命名分类视图
-struct RenameCategoryView: View {
-    @Binding var categoryName: String
-    let originalName: String
-    let categories: [Category]
-    let onSave: () -> Void
-    let onCancel: () -> Void
-    
-    @FocusState private var isTextFieldFocused: Bool
-    @State private var showError = false
-    @State private var errorMessage = ""
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // 自定义导航栏
-            HStack {
-                Button("Cancel") {
-                    onCancel()
-                }
-                .foregroundColor(.blue)
-                
-                Spacer()
-                
-                Text("Rename Category")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.black)
-                
-                Spacer()
-                
-                Button("Save") {
-                    validateAndSave()
-                }
-                .foregroundColor(canSave ? .blue : .gray)
-                .disabled(!canSave)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemGray6))
-            
-            Divider()
-            
-            // 主要内容
-            VStack(spacing: 24) {
-                // 分类名称输入
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Category Name")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
-                    
-                    TextField("Enter category name", text: $categoryName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .focused($isTextFieldFocused)
-                        .onChange(of: categoryName) { _ in
-                            if showError {
-                                showError = false
-                                errorMessage = ""
-                            }
-                        }
-                    
-                    // 错误信息显示
-                    if showError {
-                        Text(errorMessage)
-                            .font(.system(size: 14))
-                            .foregroundColor(.red)
-                            .padding(.top, 4)
-                    }
-                }
-                
-                Spacer()
-            }
-            .padding(24)
-        }
-        .background(Color(.systemBackground))
-        .onAppear {
-            isTextFieldFocused = true
-        }
-    }
-    
-    private var canSave: Bool {
-        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmedName.isEmpty && trimmedName != originalName
-    }
-    
-    private func validateAndSave() {
-        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // 检查是否为空
-        guard !trimmedName.isEmpty else {
-            showError = true
-            errorMessage = "Category name cannot be empty"
-            return
-        }
-        
-        // 检查是否与原名称相同
-        guard trimmedName != originalName else {
-            showError = true
-            errorMessage = "Please enter a different name"
-            return
-        }
-        
-        // 检查是否重复
-        let isDuplicate = categories.contains { category in
-            category.name.lowercased() == trimmedName.lowercased()
-        }
-        
-        if isDuplicate {
-            showError = true
-            errorMessage = "Category name already exists"
-            return
-        }
-        
-        // 校验通过，执行保存
-        onSave()
-    }
-}
-
-// 删除分类确认视图
-struct DeleteCategoryConfirmationView: View {
-    let category: Category
-    let itemCount: Int
-    let onConfirm: () -> Void
-    let onCancel: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // 自定义导航栏
-            HStack {
-                Spacer()
-                
-                Text("Delete Category")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.black)
-                
-                Spacer()
-                
-                Button("Cancel") {
-                    onCancel()
-                }
-                .foregroundColor(.blue)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemGray6))
-            
-            Divider()
-            
-            // 主要内容
-            VStack(spacing: 24) {
-                // 警告图标
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 48))
-                    .foregroundColor(.orange)
-                    .padding(.top, 40)
-                
-                // 警告文本
-                VStack(spacing: 12) {
-                    Text("Delete Category")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.black)
-                    
-                    Text("Are you sure you want to delete \"\(category.name)\"?")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                    
-                    if itemCount > 0 {
-                        Text("This will also delete \(itemCount) items in this category.")
-                            .font(.system(size: 14))
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.top, 8)
-                    }
-                }
-                
-                Spacer()
-                
-                // 确认按钮
-                VStack(spacing: 12) {
-                    Button(action: onConfirm) {
-                        Text("Delete")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.red)
-                            .cornerRadius(8)
-                    }
-                    
-                    Button(action: onCancel) {
-                        Text("Cancel")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.blue)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                    }
-                }
-                .padding(.bottom, 40)
-            }
-            .padding(.horizontal, 24)
-        }
-        .background(Color(.systemBackground))
     }
 }
