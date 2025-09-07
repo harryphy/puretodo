@@ -877,7 +877,7 @@ struct ContentView: View {
             if !categories.isEmpty {
                 CategorySelectorView(
                     categories: categories,
-                    currentCategoryId: itemToMove?.categoryId,
+                    currentCategoryId: getCurrentCategoryIdForItem(itemToMove),
                     onSelectCategory: { targetCategory in
                         if let item = itemToMove {
                             moveItemToCategory(item, targetCategory: targetCategory)
@@ -1651,6 +1651,25 @@ struct ContentView: View {
         saveData()
     }
     
+    // 获取事项当前所属的分类ID（处理老数据兼容性）
+    private func getCurrentCategoryIdForItem(_ item: TodoItem?) -> UUID? {
+        guard let item = item else { return nil }
+        
+        // 如果事项有明确的分类ID，直接返回
+        if let categoryId = item.categoryId {
+            return categoryId
+        }
+        
+        // 对于老数据（categoryId为nil），根据当前选中的分类来推断
+        // 如果当前选中的是"To Do"分类，那么老数据应该属于"To Do"分类
+        if let selectedCategory = selectedCategory, selectedCategory.name == "To Do" {
+            return selectedCategory.id
+        }
+        
+        // 如果当前没有选中分类，或者选中的不是"To Do"分类，返回nil
+        return nil
+    }
+    
     // 显示分类选择器
     private func showCategorySelector(for item: TodoItem) {
         // 确保categories数组不为空
@@ -1690,23 +1709,19 @@ struct CategorySelectorView: View {
                         Spacer()
                     }
                 } else {
-                    List {
-                        ForEach(categories) { category in
-                            Button(action: {
-                                onSelectCategory(category)
-                            }) {
-                                HStack {
-                                    Text(category.name)
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    if category.id == currentCategoryId {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(.blue)
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(categories) { category in
+                                CategorySelectorRowView(
+                                    category: category,
+                                    isSelected: category.id == currentCategoryId,
+                                    onTap: {
+                                        onSelectCategory(category)
                                     }
-                                }
+                                )
                             }
-                            .disabled(category.id == currentCategoryId)
                         }
+                        .padding(.top, 20)
                     }
                 }
             }
@@ -1716,7 +1731,84 @@ struct CategorySelectorView: View {
                 leading: Button("Cancel") {
                     onCancel()
                 }
+                .foregroundColor(.primary)
             )
+        }
+        .modifier(PresentationCornerRadiusModifier())
+    }
+}
+
+// 分类选择器行视图
+struct CategorySelectorRowView: View {
+    let category: Category
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 0) {
+                // 选中指示器 - 放在最左侧，固定宽度
+                HStack {
+                    if isSelected {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 4))
+                            .foregroundColor(.primary)
+                    } else {
+                        // 占位符，保持对齐
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 4))
+                            .foregroundColor(.clear)
+                    }
+                }
+                .frame(width: 16) // 固定宽度，确保对齐
+                
+                // 主要内容区域
+                HStack(spacing: 16) {
+                    // 分类名称
+                    Text(category.name)
+                        .font(.system(size: 18, weight: isSelected ? .bold : .regular))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                }
+            }
+            .padding(.leading, 14)
+            .padding(.trailing, 28)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// 自定义修饰符：条件性应用 presentationCornerRadius
+struct PresentationCornerRadiusModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.4, *) {
+            content.presentationCornerRadius(30)
+        } else {
+            content
+        }
+    }
+}
+
+// View 扩展：条件修饰符
+extension View {
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+    
+    @ViewBuilder func `if`<Content: View>(_ condition: @autoclosure () -> Bool, transform: (Self) -> Content) -> some View {
+        if condition() {
+            transform(self)
+        } else {
+            self
         }
     }
 }
