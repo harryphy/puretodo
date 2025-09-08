@@ -541,9 +541,15 @@ struct CategoryDrawerView: View {
                         onSave: {
                             let newCategory = Category(name: newCategoryName)
                             categories.append(newCategory)
+                            selectedCategory = newCategory
                             newCategoryName = ""
                             showAddCategorySheet = false
                             saveCategories()
+                            
+                            // 延迟关闭 drawer，让模态窗口先退出
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                isPresented = false
+                            }
                         },
                         onCancel: {
                             newCategoryName = ""
@@ -558,9 +564,15 @@ struct CategoryDrawerView: View {
                         onSave: {
                             let newCategory = Category(name: newCategoryName)
                             categories.append(newCategory)
+                            selectedCategory = newCategory
                             newCategoryName = ""
                             showAddCategorySheet = false
                             saveCategories()
+                            
+                            // 延迟关闭 drawer，让模态窗口先退出
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                isPresented = false
+                            }
                         },
                         onCancel: {
                             newCategoryName = ""
