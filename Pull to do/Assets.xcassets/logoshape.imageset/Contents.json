@@ -1,16 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "newicon31.png",
+      "filename" : "Done page.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "newicon32.png",
+      "filename" : "Done page 2.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "Done page 3.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
