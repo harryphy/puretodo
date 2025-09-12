@@ -225,11 +225,22 @@ struct TodoItemRowView: View {
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {
-                let generator = UIImpactFeedbackGenerator(style: .heavy)
-                generator.impactOccurred()
+                // 第一次振动：重
+                let heavyGenerator = UIImpactFeedbackGenerator(style: .heavy)
+                heavyGenerator.impactOccurred()
+                
+                // 0.2秒后第二次振动：轻
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    let lightGenerator = UIImpactFeedbackGenerator(style: .light)
+                    lightGenerator.impactOccurred()
+                }
+                
                 onMarkDone()
             } label: {
-                Label("", systemImage: "checkmark")
+                Image("purecheck")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
             }
             .tint(.green)
             if isPinned {
@@ -709,7 +720,7 @@ struct ContentView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 28)
-                    .padding(.top, 12)
+                    .padding(.top, 10)
             }
         }
         .padding(.trailing, 10)
@@ -760,7 +771,7 @@ struct ContentView: View {
                 DragGesture()
                     .onChanged { value in
                         let isFromEdge = value.startLocation.x < 18
-                        let hasEnoughTranslation = value.translation.width > 5
+                        let hasEnoughTranslation = value.translation.width > 4
                         let isRightDirection = value.translation.width > 0
                         
                         if isFromEdge && hasEnoughTranslation && isRightDirection && !isGestureActive {
@@ -772,7 +783,7 @@ struct ContentView: View {
                     }
                     .onEnded { value in
                         let isFromEdge = value.startLocation.x < 18
-                        let hasEnoughTranslation = value.translation.width > 5
+                        let hasEnoughTranslation = value.translation.width > 4
                         let isRightDirection = value.translation.width > 0
                         
                         if isFromEdge && hasEnoughTranslation && isRightDirection && !isGestureActive {
@@ -933,7 +944,7 @@ struct ContentView: View {
                 if isInDonePage {
                     // 在 Done 页面时，只处理从最左边缘开始的滑动，避免干扰列表项手势
                     let isFromVeryEdge = value.startLocation.x < 18
-                    let hasEnoughTranslation = value.translation.width > 15
+                    let hasEnoughTranslation = value.translation.width > 4
                     let isRightDirection = value.translation.width > 0
                     
                     if isFromVeryEdge && hasEnoughTranslation && isRightDirection {
@@ -1391,6 +1402,10 @@ struct ContentView: View {
         if let index = categories.firstIndex(where: { $0.id == selectedCategory.id }) {
             categories[index].name = trimmedName
             self.selectedCategory = categories[index]
+            
+            // 添加振动反馈
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
         }
         
         newCategoryName = ""
@@ -1442,6 +1457,10 @@ struct ContentView: View {
         // 切换到"To Do"分类
         self.selectedCategory = toDoCategory
         
+        // 添加振动反馈
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
+        
         // 保存数据
         saveData()
     }
@@ -1479,6 +1498,10 @@ struct ContentView: View {
         
         // 切换到"To Do"分类
         self.selectedCategory = toDoCategory
+        
+        // 添加振动反馈
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
         
         // 保存数据
         saveData()
@@ -1647,6 +1670,10 @@ struct ContentView: View {
         } else {
             items.insert(updatedItem, at: 0)
         }
+        
+        // 添加振动反馈
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
         
         saveData()
     }

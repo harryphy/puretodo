@@ -451,6 +451,10 @@ struct CategoryDrawerView: View {
                                 isSelected: selectedCategory?.id == todo.id,
                                 itemCount: itemCount(for: todo)
                             ) {
+                                // 添加轻量振动反馈
+                                let generator = UIImpactFeedbackGenerator(style: .light)
+                                generator.impactOccurred()
+                                
                                 selectedCategory = todo
                                 isPresented = false
                             }
@@ -466,6 +470,10 @@ struct CategoryDrawerView: View {
                                 isSelected: selectedCategory?.id == category.id,
                                 itemCount: itemCount(for: category)
                             ) {
+                                // 添加轻量振动反馈
+                                let generator = UIImpactFeedbackGenerator(style: .light)
+                                generator.impactOccurred()
+                                
                                 selectedCategory = category
                                 isPresented = false
                             }
