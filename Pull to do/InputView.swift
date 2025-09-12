@@ -12,6 +12,7 @@ struct InputView: View {
     @Binding var item: TodoItem
     var onSave: (TodoItem) -> Void
     var isReadOnly: Bool = false
+    var isNewItem: Bool = false
 
     @State private var newSubItemTitle: String = ""
     @State private var editingSubItemTitle: String = ""
@@ -26,6 +27,8 @@ struct InputView: View {
     @State private var isEditingTitle: Bool = false // 跟踪主事项标题是否正在编辑
     @State private var isEditingSubItem: Bool = false // 跟踪子事项是否处于编辑状态
     @State private var showReminderView = false // 显示提醒视图
+    @State private var showShareSheet = false // 显示分享界面
+    @State private var shareImage: UIImage? // 要分享的图片
     @Environment(\.presentationMode) var presentationMode
 
     private func sortSubItems() {
@@ -142,11 +145,26 @@ struct InputView: View {
 
     var body: some View {
         VStack {
-            Spacer().frame(height: 20)
-            Image(systemName: "chevron.compact.down")
-                .foregroundColor(.primary)
-                .font(.system(size: 32))
-            Spacer().frame(height: 20)
+            // 顶部区域：分享按钮和下拉指示器
+            HStack {
+                Spacer()
+                Image(systemName: "chevron.compact.down")
+                    .foregroundColor(.primary)
+                    .font(.system(size: 32))
+                Spacer()
+                if !isNewItem {
+                    Button(action: {
+                        generateAndShareImage()
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 5)
             if isEditingTitle && !isReadOnly {
                 HStack {
                     TextField("Type in here", text: $item.title)
@@ -479,5 +497,207 @@ struct InputView: View {
                 }
             }
         }
+        .sheet(isPresented: $showShareSheet) {
+            if let shareImage = shareImage {
+                ActivityViewController(activityItems: [shareImage])
+            }
+        }
     }
+    
+    // MARK: - 分享功能
+    
+    private func generateAndShareImage() {
+        let shareableView = ShareableView(item: item)
+        let renderer = ImageRenderer(content: shareableView)
+        
+        // 设置高质量渲染
+        renderer.scale = UIScreen.main.scale
+        
+        if let uiImage = renderer.uiImage {
+            shareImage = uiImage
+            showShareSheet = true
+        }
+    }
+}
+
+// MARK: - 可分享的视图
+struct ShareableView: View {
+    let item: TodoItem
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // 顶部区域：下拉指示器（隐藏分享按钮）
+            HStack {
+                Spacer()
+                Image(systemName: "chevron.compact.down")
+                    .foregroundColor(.primary)
+                    .font(.system(size: 32))
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 5)
+            
+            // 主事项标题
+            HStack {
+                Text(item.title)
+                    .font(.system(size: 21))
+                    .fontWeight(.semibold)
+                    .padding()
+                Spacer()
+            }
+            .padding(.trailing, 2)
+            .padding(.leading, 4)
+            .padding(.bottom, 8) // 增加与子事项的间距
+            
+            // 子事项列表
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(item.subItems.enumerated()), id: \.element.id) { index, subItem in
+                    VStack(spacing: 0) {
+                        HStack(alignment: .top, spacing: 0) {
+                            if subItem.isDone {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.gray)
+                                    .font(.system(size: 11))
+                                    .offset(y: 6)
+                                    .offset(x: -1)
+                                Spacer().frame(width: 4)
+                                Text(subItem.title)
+                                    .strikethrough()
+                                    .foregroundColor(.gray)
+                                    .lineLimit(nil)
+                            } else {
+                                Image(systemName: "circle.fill")
+                                    .foregroundColor(.primary)
+                                    .font(.system(size: 6))
+                                    .offset(y: 7)
+                                Spacer().frame(width: 4)
+                                Text(subItem.title)
+                                    .lineLimit(nil)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .frame(minHeight: 44)
+                        
+                        // 分隔线（除了最后一个子事项）
+                        if index < item.subItems.count - 1 {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 0.5)
+                                .padding(.horizontal, 20)
+                        }
+                    }
+                }
+            }
+            .padding(.trailing, 8)
+            .padding(.leading, 4)
+            
+            // 底部按钮区域
+            HStack {
+                Spacer()
+                HStack {
+                    Image(systemName: "plus")
+                    Text("Subitem")
+                }
+                .foregroundColor(.primary)
+                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity)
+                
+                Text("|")
+                    .padding(.horizontal, 0)
+                    .foregroundColor(.primary)
+                    .font(.system(size: 16))
+                
+                HStack {
+                    if let reminderType = item.reminderType {
+                        switch reminderType {
+                        case .single:
+                            if let reminderDate = item.reminderDate {
+                                if reminderDate > Date() {
+                                    Image(systemName: "clock.fill")
+                                        .foregroundColor(.black)
+                                    Text(DateFormatterHelper.formattedDate(reminderDate))
+                                        .foregroundColor(.black)
+                                        .fontWeight(.medium)
+                                } else {
+                                    Image(systemName: "clock")
+                                    Text(DateFormatterHelper.formattedDate(reminderDate))
+                                }
+                            } else {
+                                Image(systemName: "clock")
+                                Text("Reminder")
+                            }
+                        case .daily:
+                            Image(systemName: "clock.fill")
+                                .foregroundColor(.black)
+                            Text("Daily")
+                                .foregroundColor(.black)
+                                .fontWeight(.medium)
+                        case .weekly:
+                            Image(systemName: "clock.fill")
+                                .foregroundColor(.black)
+                            Text("Weekly")
+                                .foregroundColor(.black)
+                                .fontWeight(.medium)
+                        case .monthly:
+                            Image(systemName: "clock.fill")
+                                .foregroundColor(.black)
+                            Text("Monthly")
+                                .foregroundColor(.black)
+                                .fontWeight(.medium)
+                        }
+                    } else {
+                        Image(systemName: "clock")
+                        Text("Reminder")
+                    }
+                }
+                .foregroundColor(.primary)
+                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
+            // 添加一些底部间距，确保内容完整显示
+            Spacer()
+                .frame(height: 20)
+        }
+        .background(Color(UIColor.systemBackground))
+        .frame(width: UIScreen.main.bounds.width)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+// MARK: - 分享控制器
+struct ActivityViewController: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+        
+        // 对于 iPad，设置 popover 的源视图
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            
+            var currentViewController = rootViewController
+            while let presentedViewController = currentViewController.presentedViewController {
+                currentViewController = presentedViewController
+            }
+            
+            if let popover = controller.popoverPresentationController {
+                popover.sourceView = currentViewController.view
+                popover.sourceRect = CGRect(x: currentViewController.view.bounds.midX,
+                                          y: currentViewController.view.bounds.midY,
+                                          width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+        }
+        
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

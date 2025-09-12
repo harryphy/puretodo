@@ -313,7 +313,7 @@ struct ContentView: View {
                     self.items.insert(newItem, at: 0)
                 }
                 self.saveData()
-            })
+            }, isNewItem: true)
             .presentationCornerRadius(30)
         } else {
             InputView(item: $newItem, onSave: { newItem in
@@ -323,7 +323,7 @@ struct ContentView: View {
                     self.items.insert(newItem, at: 0)
                 }
                 self.saveData()
-            })
+            }, isNewItem: true)
         }
     }
     
@@ -334,26 +334,26 @@ struct ContentView: View {
                 InputView(item: self.$items[editingIndex], onSave: { updatedItem in
                     self.items[editingIndex] = updatedItem
                     self.saveData()
-                })
+                }, isNewItem: false)
                 .presentationCornerRadius(30)
             } else {
                 InputView(item: self.$items[editingIndex], onSave: { updatedItem in
                     self.items[editingIndex] = updatedItem
                     self.saveData()
-                })
+                }, isNewItem: false)
             }
         } else if let pinnedIndex = self.pinnedItems.firstIndex(where: { $0.id == self.editingItem?.id }) {
             if #available(iOS 16.4, *) {
                 InputView(item: self.$pinnedItems[pinnedIndex], onSave: { updatedItem in
                     self.pinnedItems[pinnedIndex] = updatedItem
                     self.saveData()
-                })
+                }, isNewItem: false)
                 .presentationCornerRadius(30)
             } else {
                 InputView(item: self.$pinnedItems[pinnedIndex], onSave: { updatedItem in
                     self.pinnedItems[pinnedIndex] = updatedItem
                     self.saveData()
-                })
+                }, isNewItem: false)
             }
         }
     }

@@ -289,16 +289,25 @@ struct DonePage: View {
         }
         .listStyle(PlainListStyle())
         .navigationBarBackButtonHidden(true) // 隐藏默认的返回按钮
-        .navigationBarItems(leading: Button(action: {
-            presentationMode.wrappedValue.dismiss() // 点击自定义返回按钮时关闭视图
-        }) {
-            Image(systemName: "chevron.left") // 仅使用箭头作为自定义返回按钮
-                .foregroundColor(.primary) // 匹配主题颜色
-                .font(.system(size: 14, weight: .medium))
-            Text("To Do")
-                .foregroundColor(.primary)
-                .font(.system(size: 18, weight: .medium))
-        })
+        .navigationBarItems(
+            leading: Button(action: {
+                presentationMode.wrappedValue.dismiss() // 点击自定义返回按钮时关闭视图
+            }) {
+                Image(systemName: "chevron.left") // 仅使用箭头作为自定义返回按钮
+                    .foregroundColor(.primary) // 匹配主题颜色
+                    .font(.system(size: 14, weight: .medium))
+                Text("To Do")
+                    .foregroundColor(.primary)
+                    .font(.system(size: 18, weight: .medium))
+            },
+            trailing: Button(action: {
+                shareApp()
+            }) {
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundColor(.primary)
+                    .font(.system(size: 16, weight: .medium))
+            }
+        )
         .navigationBarTitleDisplayMode(.inline)
         .simultaneousGesture(
             DragGesture()
@@ -377,6 +386,39 @@ struct DonePage: View {
         let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
     }
 
+    // 分享应用功能
+    private func shareApp() {
+        let appStoreURL = "https://apps.apple.com/app/%E7%AE%80%E5%8D%95%E8%AE%B0-pure-to-do/id6476076472"
+        
+        let activityViewController = UIActivityViewController(
+            activityItems: [appStoreURL],
+            applicationActivities: nil
+        )
+        
+        // 对于 iPad，需要设置 popover 的源视图
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            
+            // 找到当前显示的视图控制器
+            var currentViewController = rootViewController
+            while let presentedViewController = currentViewController.presentedViewController {
+                currentViewController = presentedViewController
+            }
+            
+            // 设置 popover 的源视图（iPad 需要）
+            if let popover = activityViewController.popoverPresentationController {
+                popover.sourceView = currentViewController.view
+                popover.sourceRect = CGRect(x: currentViewController.view.bounds.midX, 
+                                          y: currentViewController.view.bounds.midY, 
+                                          width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            
+            currentViewController.present(activityViewController, animated: true)
+        }
+    }
+    
     // 辅助函数：获取当前月份的名称
     private func currentMonthName() -> String {
         let formatter = DateFormatter()
