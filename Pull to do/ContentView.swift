@@ -529,15 +529,32 @@ struct ContentView: View {
                 .fill(Color.white)
                 .frame(height: 40)
                 .overlay(
-                    HStack {
+                    HStack(alignment: .center, spacing: 0) {
+                        // littlebar 图标按钮
+                        if !showCategoryDrawer && !isInDonePage {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showCategoryDrawer = true
+                                }
+                            }) {
+                                Image("littlebar")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: 38)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.leading, 0) // 贴紧屏幕左边缘
+                        }
+                        
                         // 分类标题
                         Text(selectedCategory?.name ?? "To Do")
                             .foregroundColor(.black)
                             .font(.system(size: 38, weight: .bold))
-                            .padding(.top, 14)
-                            .padding(.leading, 28)
+                            .padding(.leading, 22)
                         Spacer()
                     }
+                    .padding(.top, 16)
                 )
             
             Spacer().frame(height: 30)
@@ -819,30 +836,6 @@ struct ContentView: View {
         }
     }
     
-    // 分类抽屉按钮 - 独立放置在左侧边缘
-    @ViewBuilder
-    private var categoryDrawerButton: some View {
-        if !showCategoryDrawer && !isInDonePage {
-            VStack {
-                Spacer().frame(height: 50) // 与标题顶对齐
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showCategoryDrawer = true
-                    }
-                }) {
-                    Image("littlebar")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 38, height: 38)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(PlainButtonStyle())
-                Spacer()
-            }
-            .frame(width: 38)
-            .zIndex(102) // 比手势视图更高层级
-        }
-    }
     
     var body: some View {
         ZStack {
@@ -870,11 +863,6 @@ struct ContentView: View {
             categoryDrawerView
             HStack(spacing: 0) {
                 edgeGestureView
-                Spacer()
-            }
-            HStack(spacing: 0) {
-                categoryDrawerButton
-                    .offset(x: -18) // 向左偏移18像素，让图标贴紧边缘
                 Spacer()
             }
         }
