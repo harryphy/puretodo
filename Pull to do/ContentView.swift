@@ -13,6 +13,17 @@ import StoreKit
 import MessageUI
 import UIKit
 
+// MARK: - 自定义按钮样式
+
+struct CategoryNameButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
 // MARK: - 简化的边缘手势识别器
 
 struct SimpleEdgePanGesture: UIViewRepresentable {
@@ -530,28 +541,19 @@ struct ContentView: View {
                 .frame(height: 40)
                 .overlay(
                     HStack(alignment: .center, spacing: 0) {
-                        // littlebar 图标按钮
-                        if !showCategoryDrawer && !isInDonePage {
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showCategoryDrawer = true
-                                }
-                            }) {
-                                Image("littlebar")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 38)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.leading, 0) // 贴紧屏幕左边缘
-                        }
                         
-                        // 分类标题
-                        Text(selectedCategory?.name ?? "To Do")
-                            .foregroundColor(.black)
-                            .font(.system(size: 38, weight: .bold))
-                            .padding(.leading, 22)
+                        // 分类标题（可点击）
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showCategoryDrawer = true
+                            }
+                        }) {
+                            Text(selectedCategory?.name ?? "To Do")
+                                .foregroundColor(.black)
+                                .font(.system(size: 38, weight: .bold))
+                        }
+                        .buttonStyle(CategoryNameButtonStyle())
+                        .padding(.leading, 27)
                         Spacer()
                     }
                     .padding(.top, 16)
@@ -1747,8 +1749,10 @@ struct CategorySelectorView: View {
                     onCancel()
                 }
                 .foregroundColor(.primary)
+                .padding(.leading, 12)
             )
         }
+        .padding(.top, 8)
         .modifier(PresentationCornerRadiusModifier())
     }
 }

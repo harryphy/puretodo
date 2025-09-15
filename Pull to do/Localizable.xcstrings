@@ -858,13 +858,34 @@
       }
     },
     "Add Category" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加分类"
+          }
+        }
+      }
     },
     "Are you sure you want to delete this category?" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你确定要删除该分类？"
+          }
+        }
+      }
     },
     "Cancel" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
     },
     "Cancel Reminder" : {
       "extractionState" : "stale",
@@ -1058,13 +1079,34 @@
       }
     },
     "Categories" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分类"
+          }
+        }
+      }
     },
     "Category Name" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分类名"
+          }
+        }
+      }
     },
     "Change Category Name" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修改分类名"
+          }
+        }
+      }
     },
     "Daily" : {
       "localizations" : {
@@ -1171,13 +1213,34 @@
       }
     },
     "Delete" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除"
+          }
+        }
+      }
     },
     "Delete Category" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除分类"
+          }
+        }
+      }
     },
     "Enter category name" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入分类名"
+          }
+        }
+      }
     },
     "Monthly" : {
       "localizations" : {
@@ -1290,10 +1353,24 @@
       }
     },
     "Move to Category" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到其它分类"
+          }
+        }
+      }
     },
     "New Category" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新的分类"
+          }
+        }
+      }
     },
     "New Subitem" : {
       "localizations" : {
@@ -1396,7 +1473,14 @@
       }
     },
     "No categories available" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有更多的分类"
+          }
+        }
+      }
     },
     "OK" : {
       "localizations" : {
@@ -1626,6 +1710,9 @@
           }
         }
       }
+    },
+    "Pure To Do" : {
+
     },
     "PURE TO DO FeedbacK" : {
 
@@ -1934,7 +2021,14 @@
       }
     },
     "Save" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
+          }
+        }
+      }
     },
     "Save Reminder" : {
       "localizations" : {
@@ -2142,6 +2236,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "This category contains %1$lld to-do item%2$@. Deleting the category will also delete all the to-do items. Are you sure you want to continue?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该分类包含 %1$lld 个待办事项. 删除该分类也会删除这些待办事项. 你确定要继续吗？"
           }
         }
       }

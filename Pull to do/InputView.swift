@@ -158,7 +158,7 @@ struct InputView: View {
                     }) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.primary.opacity(0.3))
                     }
                 }
             }
@@ -527,16 +527,9 @@ struct ShareableView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 顶部区域：下拉指示器（隐藏分享按钮）
-            HStack {
-                Spacer()
-                Image(systemName: "chevron.compact.down")
-                    .foregroundColor(.primary)
-                    .font(.system(size: 32))
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            .padding(.bottom, 5)
+            
+                Spacer().frame(height: 60)
+            
             
             // 主事项标题
             HStack {
@@ -548,7 +541,7 @@ struct ShareableView: View {
             }
             .padding(.trailing, 2)
             .padding(.leading, 4)
-            .padding(.bottom, 8) // 增加与子事项的间距
+            .padding(.bottom, 12) // 增加与子事项的间距
             
             // 子事项列表
             VStack(alignment: .leading, spacing: 0) {
@@ -594,71 +587,33 @@ struct ShareableView: View {
             .padding(.trailing, 8)
             .padding(.leading, 4)
             
-            // 底部按钮区域
+            // 动态空白间隔
+            let screenHeight = UIScreen.main.bounds.height
+            let contentHeight = calculateContentHeight()
+            let remainingHeight = max(0, screenHeight - contentHeight - 30)
+            
+            if remainingHeight > 0 {
+                Spacer()
+                    .frame(height: remainingHeight)
+            }
+            
+            // Footer 水印区域
             HStack {
                 Spacer()
-                HStack {
-                    Image(systemName: "plus")
-                    Text("Subitem")
+                HStack(spacing: 4) {
+                    Image("purechecklight")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 16)
+                    
+                    Text("Pure To Do")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray.opacity(0.6))
                 }
-                .foregroundColor(.primary)
-                .padding(.horizontal, 4)
-                .frame(maxWidth: .infinity)
-                
-                Text("|")
-                    .padding(.horizontal, 0)
-                    .foregroundColor(.primary)
-                    .font(.system(size: 16))
-                
-                HStack {
-                    if let reminderType = item.reminderType {
-                        switch reminderType {
-                        case .single:
-                            if let reminderDate = item.reminderDate {
-                                if reminderDate > Date() {
-                                    Image(systemName: "clock.fill")
-                                        .foregroundColor(.black)
-                                    Text(DateFormatterHelper.formattedDate(reminderDate))
-                                        .foregroundColor(.black)
-                                        .fontWeight(.medium)
-                                } else {
-                                    Image(systemName: "clock")
-                                    Text(DateFormatterHelper.formattedDate(reminderDate))
-                                }
-                            } else {
-                                Image(systemName: "clock")
-                                Text("Reminder")
-                            }
-                        case .daily:
-                            Image(systemName: "clock.fill")
-                                .foregroundColor(.black)
-                            Text("Daily")
-                                .foregroundColor(.black)
-                                .fontWeight(.medium)
-                        case .weekly:
-                            Image(systemName: "clock.fill")
-                                .foregroundColor(.black)
-                            Text("Weekly")
-                                .foregroundColor(.black)
-                                .fontWeight(.medium)
-                        case .monthly:
-                            Image(systemName: "clock.fill")
-                                .foregroundColor(.black)
-                            Text("Monthly")
-                                .foregroundColor(.black)
-                                .fontWeight(.medium)
-                        }
-                    } else {
-                        Image(systemName: "clock")
-                        Text("Reminder")
-                    }
-                }
-                .foregroundColor(.primary)
-                .padding(.horizontal, 4)
-                .frame(maxWidth: .infinity)
+                .padding(.top, 30)
+                .padding(.bottom, 10)
+                Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
             
             // 添加一些底部间距，确保内容完整显示
             Spacer()
@@ -667,6 +622,25 @@ struct ShareableView: View {
         .background(Color(UIColor.systemBackground))
         .frame(width: UIScreen.main.bounds.width)
         .fixedSize(horizontal: false, vertical: true)
+    }
+    
+    // 计算内容高度的方法
+    private func calculateContentHeight() -> CGFloat {
+        // 顶部区域高度
+        let topAreaHeight: CGFloat = 24 + 12 + 12 // padding + chevron + spacing
+        
+        // 主事项标题高度
+        let titleHeight: CGFloat = 21 + 32 // font size + padding
+        
+        // 子事项列表高度
+        let subItemHeight: CGFloat = 44 // 每个子事项的最小高度
+        let subItemSpacing: CGFloat = 0.5 // 分隔线高度
+        let subItemsHeight = CGFloat(item.subItems.count) * subItemHeight + CGFloat(max(0, item.subItems.count - 1)) * subItemSpacing
+        
+        // Footer 区域高度
+        let footerHeight: CGFloat = 20 + 12 + 10 + 20 // top padding + text height + bottom padding + bottom spacing
+        
+        return topAreaHeight + titleHeight + subItemsHeight + footerHeight
     }
 }
 
