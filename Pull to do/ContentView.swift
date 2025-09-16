@@ -783,13 +783,13 @@ struct ContentView: View {
                     // 主要边缘手势区域
         Rectangle()
             .fill(Color.clear)
-            .frame(width: 18, height: .infinity)
+            .frame(width: 20, height: .infinity)
             .contentShape(Rectangle())
             .allowsHitTesting(true)
             .gesture(
                 DragGesture()
                     .onChanged { value in
-                        let isFromEdge = value.startLocation.x < 18
+                        let isFromEdge = value.startLocation.x < 20
                         let hasEnoughTranslation = value.translation.width > 4
                         let isRightDirection = value.translation.width > 0
                         
@@ -801,7 +801,7 @@ struct ContentView: View {
                         }
                     }
                     .onEnded { value in
-                        let isFromEdge = value.startLocation.x < 18
+                        let isFromEdge = value.startLocation.x < 20
                         let hasEnoughTranslation = value.translation.width > 4
                         let isRightDirection = value.translation.width > 0
                         
@@ -832,7 +832,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .frame(maxWidth: 18, maxHeight: .infinity)
+            .frame(maxWidth: 20, maxHeight: .infinity)
             .allowsHitTesting(true)
             .zIndex(101)
         }
@@ -946,7 +946,7 @@ struct ContentView: View {
                     }
                 } else {
                     // 在主页面时，支持打开分类抽屉
-                    let isFromEdge = value.startLocation.x < 18
+                    let isFromEdge = value.startLocation.x < 20
                                             let hasEnoughTranslation = value.translation.width > 5
                     let isRightDirection = value.translation.width > 0
                     
@@ -1586,15 +1586,99 @@ struct ContentView: View {
             saveData()
     }
     
-    func move(from source: IndexSet, to destination: Int) {
-        items.move(fromOffsets: source, toOffset: destination)
-        saveData()  // 保存数据
-    }
-    
-    private func movePinnedItem(from source: IndexSet, to destination: Int) {
-        pinnedItems.move(fromOffsets: source, toOffset: destination)
+    private func move(from source: IndexSet, to destination: Int) {
+        // 获取当前分类的普通事项（非置顶、未完成）
+        let currentItems = currentCategoryItems.filter { !$0.isPinned && !$0.isDone }
+        
+        // 验证索引是否有效
+        guard !source.isEmpty, source.max()! < currentItems.count else { return }
+        
+        // 收集要移动的事项及其在全局数组中的原始索引
+        var itemsToMove: [(item: TodoItem, originalIndex: Int)] = []
+        for index in source {
+            let item = currentItems[index]
+            if let originalIndex = items.firstIndex(where: { $0.id == item.id }) {
+                itemsToMove.append((item: item, originalIndex: originalIndex))
+            }
+        }
+        
+        // 按原始索引降序排列，避免移除时索引变化
+        itemsToMove.sort { $0.originalIndex > $1.originalIndex }
+        
+        // 从全局数组中移除这些事项
+        for (_, originalIndex) in itemsToMove {
+            items.remove(at: originalIndex)
+        }
+        
+        // 计算目标位置在全局数组中的索引
+        // destination 参数已经考虑了拖拽方向，直接使用即可
+        let finalTargetIndex: Int
+        
+        if destination >= currentItems.count {
+            // 拖拽到最后一个位置：插入到全局数组的末尾
+            finalTargetIndex = items.count
+        } else {
+            // 拖拽到中间位置：找到目标项在全局数组中的位置
+            let targetItem = currentItems[destination]
+            finalTargetIndex = items.firstIndex(where: { $0.id == targetItem.id }) ?? items.count
+        }
+        
+        // 将移动的事项插入到新位置
+        for (offset, (item, _)) in itemsToMove.enumerated() {
+            let insertIndex = finalTargetIndex + offset
+            let safeInsertIndex = min(max(insertIndex, 0), items.count)
+            items.insert(item, at: safeInsertIndex)
+        }
+        
         saveData()
     }
+    private func movePinnedItem(from source: IndexSet, to destination: Int) {
+        // 获取当前分类的置顶事项
+        let currentPinnedItems = currentCategoryPinnedItems
+        
+        // 验证索引是否有效
+        guard !source.isEmpty, source.max()! < currentPinnedItems.count else { return }
+        
+        // 收集要移动的置顶事项及其在全局数组中的原始索引
+        var itemsToMove: [(item: TodoItem, originalIndex: Int)] = []
+        for index in source {
+            let item = currentPinnedItems[index]
+            if let originalIndex = pinnedItems.firstIndex(where: { $0.id == item.id }) {
+                itemsToMove.append((item: item, originalIndex: originalIndex))
+            }
+        }
+        
+        // 按原始索引降序排列，避免移除时索引变化
+        itemsToMove.sort { $0.originalIndex > $1.originalIndex }
+        
+        // 从全局pinnedItems中移除这些事项
+        for (_, originalIndex) in itemsToMove {
+            pinnedItems.remove(at: originalIndex)
+        }
+        
+        // 计算目标位置在全局数组中的索引
+        // destination 参数已经考虑了拖拽方向，直接使用即可
+        let finalTargetIndex: Int
+        
+        if destination >= currentPinnedItems.count {
+            // 拖拽到最后一个位置：插入到全局pinnedItems数组的末尾
+            finalTargetIndex = pinnedItems.count
+        } else {
+            // 拖拽到中间位置：找到目标项在全局数组中的位置
+            let targetItem = currentPinnedItems[destination]
+            finalTargetIndex = pinnedItems.firstIndex(where: { $0.id == targetItem.id }) ?? pinnedItems.count
+        }
+        
+        // 将移动的置顶事项插入到新位置
+        for (offset, (item, _)) in itemsToMove.enumerated() {
+            let insertIndex = finalTargetIndex + offset
+            let safeInsertIndex = min(max(insertIndex, 0), pinnedItems.count)
+            pinnedItems.insert(item, at: safeInsertIndex)
+        }
+        
+        saveData()
+    }
+
     
     private func deleteItems(at offsets: IndexSet, from categoryItems: [TodoItem]) {
         for offset in offsets {
@@ -1663,6 +1747,7 @@ struct ContentView: View {
         
         saveData()
     }
+    
     
     // 获取事项当前所属的分类ID（处理老数据兼容性）
     private func getCurrentCategoryIdForItem(_ item: TodoItem?) -> UUID? {

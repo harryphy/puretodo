@@ -480,8 +480,6 @@ struct CategoryDrawerView: View {
                             .padding(.top, 52)
                             .padding(.horizontal, 28)
                         
-                        //Capsule().fill(Color.black).frame(height: 1.6).padding(.horizontal, 28)
-                        //Capsule().fill(Color.black).frame(height: 1).frame(maxWidth: .infinity).opacity(0.12).padding(.horizontal, 28)
                     }
                     
                     // 分类列表 - To Do分类不可拖拽，其他分类支持拖拽排序
