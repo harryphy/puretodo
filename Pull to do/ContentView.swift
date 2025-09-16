@@ -1587,16 +1587,105 @@ struct ContentView: View {
     }
     
     private func move(from source: IndexSet, to destination: Int) {
-        // 由于我们现在显示的是过滤后的事项，需要特殊处理移动逻辑
-        // 这里我们暂时禁用移动功能，或者可以实现更复杂的逻辑
-        // 为了保持简单，我们暂时不实现移动功能
+        // 获取当前分类的普通事项（非置顶、未完成）
+        let currentItems = currentCategoryItems.filter { !$0.isPinned && !$0.isDone }
+        
+        // 验证索引是否有效
+        guard !source.isEmpty, source.max()! < currentItems.count else {
+            return
+        }
+        
+        // 收集要移动的事项及其在全局数组中的原始索引
+        var itemsToMove: [(item: TodoItem, originalIndex: Int)] = []
+        for index in source {
+            let item = currentItems[index]
+            if let originalIndex = items.firstIndex(where: { $0.id == item.id }) {
+                itemsToMove.append((item: item, originalIndex: originalIndex))
+            }
+        }
+        
+        // 按原始索引降序排列，避免移除时索引变化
+        itemsToMove.sort { $0.originalIndex > $1.originalIndex }
+        
+        // 从全局数组中移除这些事项
+        for (_, originalIndex) in itemsToMove {
+            items.remove(at: originalIndex)
+        }
+        
+        // 计算目标位置在全局数组中的索引
+        // 需要找到目标位置对应的全局数组索引
+        let targetItemIndex = min(destination, currentItems.count - 1)
+        let targetItem = currentItems[targetItemIndex]
+        let targetGlobalIndex = items.firstIndex(where: { $0.id == targetItem.id }) ?? items.count
+        
+        // 调整目标位置：如果向下拖拽，需要插入到目标项之后
+        let finalTargetIndex: Int
+        if destination > source.first! {
+            // 向下拖拽：插入到目标项之后
+            finalTargetIndex = min(targetGlobalIndex + 1, items.count)
+        } else {
+            // 向上拖拽：插入到目标项之前
+            finalTargetIndex = max(targetGlobalIndex, 0)
+        }
+        
+        // 将移动的事项插入到新位置
+        for (offset, (item, _)) in itemsToMove.enumerated() {
+            let insertIndex = finalTargetIndex + offset
+            let safeInsertIndex = min(max(insertIndex, 0), items.count)
+            items.insert(item, at: safeInsertIndex)
+        }
+        
         saveData()
     }
     
     private func movePinnedItem(from source: IndexSet, to destination: Int) {
-        // 由于我们现在显示的是过滤后的置顶事项，需要特殊处理移动逻辑
-        // 这里我们暂时禁用移动功能，或者可以实现更复杂的逻辑
-        // 为了保持简单，我们暂时不实现移动功能
+        // 获取当前分类的置顶事项
+        let currentPinnedItems = currentCategoryPinnedItems
+        
+        // 验证索引是否有效
+        guard !source.isEmpty, source.max()! < currentPinnedItems.count else {
+            return
+        }
+        
+        // 收集要移动的置顶事项及其在全局数组中的原始索引
+        var itemsToMove: [(item: TodoItem, originalIndex: Int)] = []
+        for index in source {
+            let item = currentPinnedItems[index]
+            if let originalIndex = pinnedItems.firstIndex(where: { $0.id == item.id }) {
+                itemsToMove.append((item: item, originalIndex: originalIndex))
+            }
+        }
+        
+        // 按原始索引降序排列，避免移除时索引变化
+        itemsToMove.sort { $0.originalIndex > $1.originalIndex }
+        
+        // 从全局pinnedItems中移除这些事项
+        for (_, originalIndex) in itemsToMove {
+            pinnedItems.remove(at: originalIndex)
+        }
+        
+        // 计算目标位置在全局数组中的索引
+        let targetItemIndex = min(destination, currentPinnedItems.count - 1)
+        let targetItem = currentPinnedItems[targetItemIndex]
+        let targetGlobalIndex = pinnedItems.firstIndex(where: { $0.id == targetItem.id }) ?? pinnedItems.count
+        
+        // 调整目标位置：如果向下拖拽，需要插入到目标项之后
+        let finalTargetIndex: Int
+        if destination > source.first! {
+            // 向下拖拽：插入到目标项之后
+            finalTargetIndex = min(targetGlobalIndex + 1, pinnedItems.count)
+        } else {
+            // 向上拖拽：插入到目标项之前
+            finalTargetIndex = max(targetGlobalIndex, 0)
+        }
+        
+        // 将移动的置顶事项插入到新位置
+        for (offset, (item, _)) in itemsToMove.enumerated() {
+            let insertIndex = finalTargetIndex + offset
+            let safeInsertIndex = min(max(insertIndex, 0), pinnedItems.count)
+            pinnedItems.insert(item, at: safeInsertIndex)
+        }
+        
         saveData()
     }
     
@@ -1838,3 +1927,4 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
     }
 }
+

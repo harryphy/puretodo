@@ -498,7 +498,10 @@ struct CategoryDrawerView: View {
                                 generator.impactOccurred()
                                 
                                 selectedCategory = todo
-                                isPresented = false
+                                // 添加向左滑走的动画效果
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isPresented = false
+                                }
                             }
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets())
@@ -517,7 +520,10 @@ struct CategoryDrawerView: View {
                                 generator.impactOccurred()
                                 
                                 selectedCategory = category
-                                isPresented = false
+                                // 添加向左滑走的动画效果
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isPresented = false
+                                }
                             }
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets())
