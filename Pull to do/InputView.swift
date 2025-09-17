@@ -344,16 +344,14 @@ struct InputView: View {
                     // 非只读模式：显示 Share、Subitem、Reminder 三个按钮
                     Spacer()
                     HStack{
-                        if !isNewItem {
-                            Button(action: {
-                                generateAndShareImage()
-                            }) {
-                                Image(systemName: "square.and.arrow.up")
-                                Text("Share")
-                            }
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 2)
+                        Button(action: {
+                            generateAndShareImage()
+                        }) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share")
                         }
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 2)
                     }
                     .frame(maxWidth: .infinity)
                     Text("|")
