@@ -29,6 +29,7 @@ struct InputView: View {
     @State private var showReminderView = false // 显示提醒视图
     @State private var showShareSheet = false // 显示分享界面
     @State private var shareImage: UIImage? // 要分享的图片
+    @State private var shareFileURL: URL? // 要分享的文件URL
     @Environment(\.presentationMode) var presentationMode
 
     private func sortSubItems() {
@@ -152,15 +153,6 @@ struct InputView: View {
                     .foregroundColor(.primary)
                     .font(.system(size: 32))
                 Spacer()
-                if !isNewItem {
-                    Button(action: {
-                        generateAndShareImage()
-                    }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.3))
-                    }
-                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
@@ -349,7 +341,25 @@ struct InputView: View {
             Spacer()
             HStack {
                 if !isReadOnly {
+                    // 非只读模式：显示 Share、Subitem、Reminder 三个按钮
                     Spacer()
+                    HStack{
+                        if !isNewItem {
+                            Button(action: {
+                                generateAndShareImage()
+                            }) {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Share")
+                            }
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    Text("|")
+                        .padding(.horizontal, 0)
+                        .foregroundColor(.primary)
+                        .font(.system(size: 16))
                     HStack {
                         Button(action: {
                             addSubItem()
@@ -360,7 +370,7 @@ struct InputView: View {
                             }
                         }
                         .foregroundColor(.primary)
-                        .padding(.horizontal, 4)
+                        .padding(.horizontal, 6)
                     }
                     .frame(maxWidth: .infinity)
                     Text("|")
@@ -442,9 +452,23 @@ struct InputView: View {
                             }
                         }
                         .foregroundColor(.primary)
-                        .padding(.horizontal, 4)
+                        .padding(.horizontal, 2)
                     }
                     .frame(maxWidth: .infinity)
+                    Spacer()
+                } else {
+                    // 只读模式：只显示 Share 按钮
+                    Spacer()
+                    Button(action: {
+                        generateAndShareImage()
+                    }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share")
+                        }
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 2)
                     Spacer()
                 }
             }
@@ -498,7 +522,9 @@ struct InputView: View {
             }
         }
         .sheet(isPresented: $showShareSheet) {
-            if let shareImage = shareImage {
+            if let shareFileURL = shareFileURL {
+                ActivityViewController(activityItems: [shareFileURL])
+            } else if let shareImage = shareImage {
                 ActivityViewController(activityItems: [shareImage])
             }
         }
@@ -510,12 +536,39 @@ struct InputView: View {
         let shareableView = ShareableView(item: item)
         let renderer = ImageRenderer(content: shareableView)
         
-        // 设置高质量渲染
-        renderer.scale = UIScreen.main.scale
+        // 设置超高质量渲染 - 3倍分辨率确保清晰度
+        renderer.scale = max(UIScreen.main.scale * 2.0, 3.0)
         
         if let uiImage = renderer.uiImage {
-            shareImage = uiImage
+            // 创建带文件名的分享项
+            let fileName = "PureToDo_\(item.title.prefix(20)).png"
+            let tempURL = createTemporaryImageFile(image: uiImage, fileName: fileName)
+            
+            if let url = tempURL {
+                // 分享文件而不是 UIImage
+                shareImage = nil
+                shareFileURL = url
+            } else {
+                // 回退到原始方式
+                shareImage = uiImage
+            }
             showShareSheet = true
+        }
+    }
+    
+    // 创建临时图片文件
+    private func createTemporaryImageFile(image: UIImage, fileName: String) -> URL? {
+        guard let data = image.pngData() else { return nil }
+        
+        let tempDirectory = FileManager.default.temporaryDirectory
+        let fileURL = tempDirectory.appendingPathComponent(fileName)
+        
+        do {
+            try data.write(to: fileURL)
+            return fileURL
+        } catch {
+            print("无法创建临时图片文件: \(error)")
+            return nil
         }
     }
 }
@@ -554,7 +607,7 @@ struct ShareableView: View {
                                     .font(.system(size: 11))
                                     .offset(y: 6)
                                     .offset(x: -1)
-                                Spacer().frame(width: 4)
+                                Spacer().frame(width: 6)
                                 Text(subItem.title)
                                     .strikethrough()
                                     .foregroundColor(.gray)
@@ -564,23 +617,21 @@ struct ShareableView: View {
                                     .foregroundColor(.primary)
                                     .font(.system(size: 6))
                                     .offset(y: 7)
-                                Spacer().frame(width: 4)
+                                Spacer().frame(width: 6)
                                 Text(subItem.title)
                                     .lineLimit(nil)
                             }
                             Spacer()
                         }
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 10)
                         .frame(minHeight: 44)
                         
-                        // 分隔线（除了最后一个子事项）
-                        if index < item.subItems.count - 1 {
+                        // 分隔线
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(height: 0.5)
                                 .padding(.horizontal, 20)
-                        }
                     }
                 }
             }
@@ -590,7 +641,7 @@ struct ShareableView: View {
             // 动态空白间隔
             let screenHeight = UIScreen.main.bounds.height
             let contentHeight = calculateContentHeight()
-            let remainingHeight = max(0, screenHeight - contentHeight - 30)
+            let remainingHeight = max(0, screenHeight - contentHeight - 46)
             
             if remainingHeight > 0 {
                 Spacer()
