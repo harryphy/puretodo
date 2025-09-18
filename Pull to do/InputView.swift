@@ -351,7 +351,7 @@ struct InputView: View {
                             Text("Share")
                         }
                         .foregroundColor(.primary)
-                        .padding(.horizontal, 2)
+                        .padding(.horizontal, 4)
                     }
                     .frame(maxWidth: .infinity)
                     Text("|")
@@ -368,7 +368,7 @@ struct InputView: View {
                             }
                         }
                         .foregroundColor(.primary)
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, 4)
                     }
                     .frame(maxWidth: .infinity)
                     Text("|")
@@ -390,9 +390,11 @@ struct InputView: View {
                                                 Text(DateFormatterHelper.formattedDate(reminderDate))
                                                     .foregroundColor(.black)
                                                     .fontWeight(.medium)
+                                                    .lineLimit(1) // 限制为一行
                                             } else {
                                                 Image(systemName: "clock")
                                                 Text(DateFormatterHelper.formattedDate(reminderDate))
+                                                    .lineLimit(1) // 限制为一行
                                             }
                                         } else {
                                             // No reminder date set, show default
@@ -407,7 +409,6 @@ struct InputView: View {
                                                 .foregroundColor(.black)
                                                 .fontWeight(.medium)
                                                 .lineLimit(1) // 限制为一行
-                                                .truncationMode(.tail) // 超出部分以省略号结尾
                                         } else {
                                             // No time set
                                             Image(systemName: "clock")
@@ -450,7 +451,7 @@ struct InputView: View {
                             }
                         }
                         .foregroundColor(.primary)
-                        .padding(.horizontal, 2)
+                        .padding(.horizontal, 4)
                     }
                     .frame(maxWidth: .infinity)
                     Spacer()

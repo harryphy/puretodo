@@ -66,14 +66,14 @@ struct SimpleEdgePanGesture: UIViewRepresentable {
                 
             case .changed:
                 // 如果从边缘开始且向右滑动超过10像素，立即触发
-                if location.x < 25 && translation.x > 10 && !hasTriggered {
+                if location.x < 15 && translation.x > 5 && !hasTriggered {
                     hasTriggered = true
                     onEdgePan()
                 }
                 
             case .ended:
                 // 最终确认：如果从边缘开始且滑动距离足够
-                if location.x < 25 && translation.x > 5 && !hasTriggered {
+                if location.x < 15 && translation.x > 5 && !hasTriggered {
                     hasTriggered = true
                     onEdgePan()
                 }
@@ -251,7 +251,7 @@ struct TodoItemRowView: View {
                 Image("purecheck")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 18, height: 18)
             }
             .tint(.green)
             if isPinned {
@@ -783,13 +783,13 @@ struct ContentView: View {
                     // 主要边缘手势区域
         Rectangle()
             .fill(Color.clear)
-            .frame(width: 20, height: .infinity)
+            .frame(width: 18, height: .infinity)
             .contentShape(Rectangle())
             .allowsHitTesting(true)
             .gesture(
                 DragGesture()
                     .onChanged { value in
-                        let isFromEdge = value.startLocation.x < 20
+                        let isFromEdge = value.startLocation.x < 18
                         let hasEnoughTranslation = value.translation.width > 4
                         let isRightDirection = value.translation.width > 0
                         
@@ -801,7 +801,7 @@ struct ContentView: View {
                         }
                     }
                     .onEnded { value in
-                        let isFromEdge = value.startLocation.x < 20
+                        let isFromEdge = value.startLocation.x < 18
                         let hasEnoughTranslation = value.translation.width > 4
                         let isRightDirection = value.translation.width > 0
                         
@@ -832,7 +832,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .frame(maxWidth: 20, maxHeight: .infinity)
+            .frame(maxWidth: 18, maxHeight: .infinity)
             .allowsHitTesting(true)
             .zIndex(101)
         }
@@ -946,7 +946,7 @@ struct ContentView: View {
                     }
                 } else {
                     // 在主页面时，支持打开分类抽屉
-                    let isFromEdge = value.startLocation.x < 20
+                    let isFromEdge = value.startLocation.x < 18
                                             let hasEnoughTranslation = value.translation.width > 5
                     let isRightDirection = value.translation.width > 0
                     
