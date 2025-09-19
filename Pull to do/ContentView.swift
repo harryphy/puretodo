@@ -232,7 +232,7 @@ struct TodoItemRowView: View {
             } label: {
                 Label("", systemImage: "trash.fill")
             }
-            .tint(.red)
+            .tint(Color(hex: "F55447"))
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {
@@ -253,7 +253,7 @@ struct TodoItemRowView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 18, height: 18)
             }
-            .tint(.green)
+            .tint(Color(hex: "3BBF5E"))
             if isPinned {
                 Button {
                     let generator = UIImpactFeedbackGenerator(style: .light)
@@ -262,7 +262,7 @@ struct TodoItemRowView: View {
                 } label: {
                     Label("", systemImage: "pin.slash.fill")
                 }
-                .tint(.orange)
+                .tint(Color(hex: "F8B600"))
             } else {
                 Button {
                     let generator = UIImpactFeedbackGenerator(style: .light)
@@ -271,7 +271,7 @@ struct TodoItemRowView: View {
                 } label: {
                     Label("", systemImage: "pin.fill")
                 }
-                .tint(.orange)
+                .tint(Color(hex: "F8B600"))
             }
             Button {
                 let generator = UIImpactFeedbackGenerator(style: .light)
@@ -280,7 +280,7 @@ struct TodoItemRowView: View {
             } label: {
                 Label("", systemImage: "arrowshape.turn.up.right.fill")
             }
-            .tint(.blue)
+            .tint(Color(hex: "F78D41"))
         }
     }
 }
@@ -1917,6 +1917,21 @@ extension View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+extension Color {
+    init(hex: String) {
+        let hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        var rgb: UInt64 = 0
+        Scanner(string: hexSanitized).scanHexInt64(&rgb)
+        self.init(
+            .sRGB,
+            red: Double((rgb >> 16) & 0xFF) / 255.0,
+            green: Double((rgb >> 8) & 0xFF) / 255.0,
+            blue: Double(rgb & 0xFF) / 255.0,
+            opacity: 1.0
+        )
     }
 }
 

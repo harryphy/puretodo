@@ -256,6 +256,7 @@ struct DonePage: View {
                             } label: {
                                 Label("", systemImage: "trash.fill")
                             }
+                            .tint(Color(hex: "F55447"))
                         }
                         // 滑动撤销的功能
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -266,7 +267,7 @@ struct DonePage: View {
                             } label: {
                                 Label("", systemImage: "arrow.uturn.backward")
                             }
-                            .tint(.green)
+                            .tint(Color(hex: "3BBF5E"))
                         }
                     }
                     .onDelete { offsets in

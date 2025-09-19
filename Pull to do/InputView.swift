@@ -244,7 +244,7 @@ struct InputView: View {
                                         } label: {
                                             Label("", systemImage: "arrow.uturn.backward")
                                         }
-                                        .tint(.green)
+                                        .tint(Color(hex: "3BBF5E"))
                                     }
                                 }
                             // 删除按钮
@@ -257,7 +257,7 @@ struct InputView: View {
                                         } label: {
                                             Label("", systemImage: "trash")
                                         }
-                                        .tint(.red)
+                                        .tint(Color(hex: "F55447"))
                                     }
                                 }
                         }
@@ -311,9 +311,12 @@ struct InputView: View {
                                         sortSubItems()
                                         let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
                                     } label: {
-                                        Label("", systemImage: "checkmark")
+                                        Image("purecheck")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 12, height: 12)
                                     }
-                                    .tint(.green)
+                                    .tint(Color(hex: "3BBF5E"))
                                 }
                             }
                             // 删除按钮
@@ -326,7 +329,7 @@ struct InputView: View {
                                     } label: {
                                         Label("", systemImage: "trash")
                                     }
-                                    .tint(.red)
+                                    .tint(Color(hex: "F55447"))
                                 }
                             }
                         }
