@@ -598,12 +598,16 @@ struct CategoryDrawerView: View {
                             categories.append(newCategory)
                             selectedCategory = newCategory
                             newCategoryName = ""
-                            showAddCategorySheet = false
                             saveCategories()
                             
-                            // 延迟关闭 drawer，让模态窗口先退出
+                            // 先关闭模态窗口
+                            showAddCategorySheet = false
+                            
+                            // 延迟关闭 drawer，让模态窗口先退出（0.3秒），然后 drawer 再退出（0.3秒）
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                isPresented = false
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isPresented = false
+                                }
                             }
                         },
                         onCancel: {
@@ -621,12 +625,16 @@ struct CategoryDrawerView: View {
                             categories.append(newCategory)
                             selectedCategory = newCategory
                             newCategoryName = ""
-                            showAddCategorySheet = false
                             saveCategories()
                             
-                            // 延迟关闭 drawer，让模态窗口先退出
+                            // 先关闭模态窗口
+                            showAddCategorySheet = false
+                            
+                            // 延迟关闭 drawer，让模态窗口先退出（0.3秒），然后 drawer 再退出（0.3秒）
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                isPresented = false
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isPresented = false
+                                }
                             }
                         },
                         onCancel: {
