@@ -156,6 +156,48 @@ struct NotificationHelper {
             UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
         }
     }
+    
+    /// 清理所有"孤儿"通知（对应的事项已不存在或已完成）
+    /// - Parameters:
+    ///   - items: 所有未完成的事项列表
+    ///   - pinnedItems: 所有置顶的事项列表
+    ///   - doneItems: 所有已完成的事项列表
+    static func cleanupOrphanedNotifications(items: [TodoItem], pinnedItems: [TodoItem], doneItems: [TodoItem]) {
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            // 收集所有有效的事项 ID（包括未完成和已完成的事项）
+            // 注意：已完成的事项不应该有通知，所以只检查未完成的事项
+            let allValidItemIds = Set(
+                items.map { $0.id.uuidString } +
+                pinnedItems.map { $0.id.uuidString }
+            )
+            
+            // 找出所有需要删除的通知标识符
+            var identifiersToRemove: [String] = []
+            
+            for request in requests {
+                // 通知的 identifier 格式是 "UUID_index" 或 "UUID"
+                // 提取 UUID 部分
+                let uuidString: String
+                if let underscoreIndex = request.identifier.firstIndex(of: "_") {
+                    uuidString = String(request.identifier[..<underscoreIndex])
+                } else {
+                    uuidString = request.identifier
+                }
+                
+                // 如果这个 UUID 不在有效的事项列表中，说明事项已被删除
+                // 或者如果事项已完成（在 doneItems 中），也应该取消通知
+                if !allValidItemIds.contains(uuidString) {
+                    identifiersToRemove.append(request.identifier)
+                }
+            }
+            
+            // 批量删除无效的通知
+            if !identifiersToRemove.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
+                print("清理了 \(identifiersToRemove.count) 个孤儿通知")
+            }
+        }
+    }
 }
 
 // 自定义虚线形状

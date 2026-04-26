@@ -738,7 +738,7 @@ struct ContentView: View {
                 Image("logoshape")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(height: 28)
+                    .frame(width:28,height: 28)
                     .padding(.top, 10)
             }
         }
@@ -1002,6 +1002,12 @@ struct ContentView: View {
         
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == nil {
             todoDataStore.loadAllItems()
+            // 额外清理一次，使用 ContentView 自己的数据（确保覆盖所有情况）
+            NotificationHelper.cleanupOrphanedNotifications(
+                items: items,
+                pinnedItems: pinnedItems,
+                doneItems: doneItems
+            )
         }
         NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowTodoDetail"), object: nil, queue: .main) { notification in
             if let todoId = notification.object as? UUID {
@@ -1429,6 +1435,16 @@ struct ContentView: View {
             return
         }
         
+        // 取消要删除事项的所有通知
+        let itemsToDelete = items.filter { $0.categoryId == selectedCategory.id }
+        let pinnedItemsToDelete = pinnedItems.filter { $0.categoryId == selectedCategory.id }
+        for item in itemsToDelete {
+            NotificationHelper.cancelReminder(for: item)
+        }
+        for item in pinnedItemsToDelete {
+            NotificationHelper.cancelReminder(for: item)
+        }
+        
         // 删除该分类下的所有未完成事项
         items.removeAll { $0.categoryId == selectedCategory.id }
         pinnedItems.removeAll { $0.categoryId == selectedCategory.id }
@@ -1536,6 +1552,9 @@ struct ContentView: View {
     }
     
     private func deleteItem(item: TodoItem) {
+        // 取消与此事项相关的所有通知
+        NotificationHelper.cancelReminder(for: item)
+        
         if let index = items.firstIndex(where: { $0.id == item.id }) {
             items.remove(at: index)
             saveData()
@@ -1543,6 +1562,9 @@ struct ContentView: View {
     }
     
     private func deletePinnedItem(item: TodoItem) {
+        // 取消与此事项相关的所有通知
+        NotificationHelper.cancelReminder(for: item)
+        
         if let index = pinnedItems.firstIndex(where: { $0.id == item.id }) {
             pinnedItems.remove(at: index)
             saveData()
@@ -1550,6 +1572,9 @@ struct ContentView: View {
     }
     
     private func markAsDone(item: TodoItem) {
+        // 取消与此事项相关的所有通知（完成的事项不应该继续提醒）
+        NotificationHelper.cancelReminder(for: item)
+        
         var updatedItem = item
         updatedItem.isDone = true
         updatedItem.doneDate = Date()
@@ -1683,6 +1708,9 @@ struct ContentView: View {
     private func deleteItems(at offsets: IndexSet, from categoryItems: [TodoItem]) {
         for offset in offsets {
             let itemToDelete = categoryItems[offset]
+            // 取消与此事项相关的所有通知
+            NotificationHelper.cancelReminder(for: itemToDelete)
+            
             if let index = items.firstIndex(where: { $0.id == itemToDelete.id }) {
                 items.remove(at: index)
             }

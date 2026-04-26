@@ -351,6 +351,9 @@ struct DonePage: View {
     // MARK: - 私有方法
     
     private func deleteDoneItem(_ item: TodoItem, on date: Date) {
+        // 取消与此事项相关的所有通知
+        NotificationHelper.cancelReminder(for: item)
+        
         doneItems.removeAll { $0.id == item.id }
         saveData()  // 确保变更保存到 UserDefaults
         let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
@@ -359,6 +362,12 @@ struct DonePage: View {
     private func deleteDoneItems(at offsets: IndexSet, on date: Date) {
         if let dateGroup = groupedItems[date] {
             let idsToDelete = offsets.map { dateGroup[$0].id }
+            // 取消所有要删除事项的相关通知
+            for id in idsToDelete {
+                if let item = doneItems.first(where: { $0.id == id }) {
+                    NotificationHelper.cancelReminder(for: item)
+                }
+            }
             doneItems.removeAll { idsToDelete.contains($0.id) }
             saveData()  // 确保变更保存到 UserDefaults
             let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
@@ -383,6 +392,12 @@ struct DonePage: View {
         }
         
         items.insert(undoneItem, at: 0)
+        
+        // 如果事项原本有 reminder 设置，撤销完成时重新设置通知
+        if undoneItem.reminderType != nil {
+            NotificationHelper.scheduleNotification(for: undoneItem)
+        }
+        
         saveData()
         let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
     }

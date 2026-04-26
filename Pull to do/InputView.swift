@@ -30,8 +30,7 @@ struct InputView: View {
     @State private var showShareSheet = false // 显示分享界面
     @State private var shareImage: UIImage? // 要分享的图片
     @State private var shareFileURL: URL? // 要分享的文件URL
-    @Environment(\.presentationMode) var presentationMode
-
+    @Environment(\.presentationMode) var presentation
     private func sortSubItems() {
         item.subItems.sort { !$0.isDone && $1.isDone }
         onSave(item)
@@ -177,7 +176,7 @@ struct InputView: View {
                                 onSave(item)
                                 let generator = UIImpactFeedbackGenerator(style: .heavy); generator.impactOccurred()
                                 self.isEditingTitle = false
-                                presentationMode.wrappedValue.dismiss()
+                                presentation.wrappedValue.dismiss()
                             }
                         }
                 }
@@ -344,23 +343,8 @@ struct InputView: View {
             Spacer()
             HStack {
                 if !isReadOnly {
-                    // 非只读模式：显示 Share、Subitem、Reminder 三个按钮
+                    // 非只读模式：显示 + Subitem、Reminder、Share 三个按钮
                     Spacer()
-                    HStack{
-                        Button(action: {
-                            generateAndShareImage()
-                        }) {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Share")
-                        }
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 4)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Text("|")
-                        .padding(.horizontal, 0)
-                        .foregroundColor(.primary)
-                        .font(.system(size: 16))
                     HStack {
                         Button(action: {
                             addSubItem()
@@ -452,6 +436,21 @@ struct InputView: View {
                                     Text("Reminder")
                                 }
                             }
+                        }
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 4)
+                    }
+                    .frame(maxWidth: .infinity)
+                    Text("|")
+                        .padding(.horizontal, 0)
+                        .foregroundColor(.primary)
+                        .font(.system(size: 16))
+                    HStack{
+                        Button(action: {
+                            generateAndShareImage()
+                        }) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share")
                         }
                         .foregroundColor(.primary)
                         .padding(.horizontal, 4)
