@@ -43,8 +43,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                     // 老用户或已购买完整版的用户，解锁全部功能
                     self.unlockAllFeatures()
                 } else {
-                    // 新用户，未购买完整版，按照默认流程
-                    self.setupForNewUser()
+                    // 收据验证失败和真实未购买都会返回 false/false。不要因为临时验证失败清除本地已有权限。
+                    if !UserDefaults.standard.bool(forKey: "isAllFeaturesUnlocked") {
+                        self.setupForNewUser()
+                    }
                 }
             }
         }
