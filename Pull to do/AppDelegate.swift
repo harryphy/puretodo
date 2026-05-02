@@ -16,9 +16,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
         UNUserNotificationCenter.current().delegate = self
-        // 设置导航栏的背景颜色为白色
+        // Keep navigation surfaces flat and opaque across system versions.
+        let navigationAppearance = UINavigationBarAppearance()
+        navigationAppearance.configureWithOpaqueBackground()
+        navigationAppearance.backgroundColor = .white
+        navigationAppearance.shadowColor = .clear
+
+        UINavigationBar.appearance().standardAppearance = navigationAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navigationAppearance
+        UINavigationBar.appearance().compactAppearance = navigationAppearance
         UINavigationBar.appearance().backgroundColor = .white
         UINavigationBar.appearance().barTintColor = .white
+        UINavigationBar.appearance().tintColor = .black
         UINavigationBar.appearance().shadowImage = UIImage()
         // 加载数据并刷新小组件
         loadDataAndRefreshWidget()

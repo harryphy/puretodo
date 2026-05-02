@@ -7,6 +7,27 @@
 import SwiftUI
 import UserNotifications
 
+private extension View {
+    func subItemListRowStyle() -> some View {
+        self
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+            .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 0))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.white)
+    }
+}
+
+private struct HiddenListBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content.scrollContentBackground(.hidden)
+        } else {
+            content
+        }
+    }
+}
+
 // 输入视图，用于新增和编辑事项
 struct InputView: View {
     @Binding var item: TodoItem
@@ -143,70 +164,214 @@ struct InputView: View {
         item.reminderDaysOfMonth = nil
     }
 
+    @ViewBuilder
+    private func titleView() -> some View {
+        if isEditingTitle && !isReadOnly {
+            TextField("Type in here", text: $item.title)
+                .font(.system(size: 22, weight: .medium))
+                .foregroundColor(Color(hex: "0A0A0A").opacity(0.9))
+                .focused($isInputActive)
+                .keyboardType(.default)
+                .submitLabel(.done)
+                .textFieldStyle(PlainTextFieldStyle())
+                .frame(height: 40, alignment: .leading)
+                .padding(.horizontal, 24)
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.isInputActive = true
+                    }
+                }
+                .onSubmit {
+                    let trimmedTitle = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedTitle.isEmpty {
+                        onSave(item)
+                        let generator = UIImpactFeedbackGenerator(style: .heavy); generator.impactOccurred()
+                        self.isEditingTitle = false
+                        presentation.wrappedValue.dismiss()
+                    }
+                }
+        } else {
+            HStack {
+                Text(item.title)
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundColor(Color(hex: "0A0A0A").opacity(0.9))
+                    .lineSpacing(4)
+                    .lineLimit(nil)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 40, alignment: .leading)
+            .padding(.horizontal, 24)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if !isReadOnly {
+                    self.isEditingTitle = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.isInputActive = true
+                    }
+                }
+            }
+        }
+    }
+
+    private func subItemText(_ title: String, isDone: Bool) -> some View {
+        Text(title)
+            .font(.system(size: 17, weight: .regular))
+            .foregroundColor(Color(hex: "0A0A0A").opacity(isDone ? 0.3 : 0.8))
+            .strikethrough(isDone)
+            .lineSpacing(4)
+            .lineLimit(nil)
+    }
+
+    private var completedSectionDivider: some View {
+        Rectangle()
+            .fill(Color.black.opacity(0.05))
+            .frame(height: 0.637)
+            .padding(.vertical, 12)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.white)
+    }
+
+    private func toolbarButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .regular))
+                    .frame(width: 16, height: 16)
+
+                Text(title)
+                    .font(.system(size: 15, weight: .regular))
+                    .tracking(-0.01)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .foregroundColor(Color(hex: "0A0A0A"))
+            .frame(height: 21, alignment: .center)
+            .frame(maxWidth: .infinity)
+        }
+        .flatButtonStyle()
+    }
+
+    private var reminderToolbarButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                showReminderView = true
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: hasReminder ? "bell.fill" : "bell")
+                    .font(.system(size: 16, weight: .regular))
+                    .frame(width: 16, height: 16)
+
+                Text(reminderToolbarTitle)
+                    .font(.system(size: 15, weight: hasReminder ? .medium : .regular))
+                    .tracking(-0.01)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .foregroundColor(Color(hex: "0A0A0A"))
+            .frame(height: 21, alignment: .center)
+            .frame(maxWidth: .infinity)
+        }
+        .flatButtonStyle()
+    }
+
+    private var toolbarDivider: some View {
+        Rectangle()
+            .fill(Color.black.opacity(0.08))
+            .frame(width: 1, height: 16)
+            .padding(.horizontal, 3)
+    }
+
+    private var bottomToolbar: some View {
+        HStack(spacing: 0) {
+            if !isReadOnly {
+                toolbarButton(icon: "plus", title: NSLocalizedString("Subitem", comment: "Subitem toolbar button")) {
+                    addSubItem()
+                }
+                toolbarDivider
+                reminderToolbarButton
+                toolbarDivider
+                toolbarButton(icon: "square.and.arrow.up", title: NSLocalizedString("Share", comment: "Share toolbar button")) {
+                    generateAndShareImage()
+                }
+            } else {
+                Spacer()
+                toolbarButton(icon: "square.and.arrow.up", title: NSLocalizedString("Share", comment: "Share toolbar button")) {
+                    generateAndShareImage()
+                }
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 20)
+        .padding(.bottom, 20)
+        .frame(height: 62, alignment: .top)
+        .background(Color.white)
+        .overlay(
+            Rectangle()
+                .fill(Color.black.opacity(0.05))
+                .frame(height: 0.637),
+            alignment: .top
+        )
+    }
+
+    private var hasReminder: Bool {
+        item.reminderType != nil
+    }
+
+    private var reminderToolbarTitle: String {
+        guard let reminderType = item.reminderType else {
+            return NSLocalizedString("Reminder", comment: "Reminder toolbar button")
+        }
+
+        switch reminderType {
+        case .single:
+            if let reminderDate = item.reminderDate {
+                return DateFormatterHelper.formattedDate(reminderDate)
+            }
+        case .daily:
+            if let reminderTime = item.reminderTime {
+                return "Daily at \(DateFormatterHelper.formattedTime(reminderTime))"
+            }
+        case .weekly:
+            if let reminderTime = item.reminderTime, let weekdays = item.reminderWeekdays {
+                let weekdaysString = weekdays.sorted().map { DateFormatterHelper.weekdaySymbol(for: $0) }.joined(separator: ", ")
+                return "\(weekdaysString) \(DateFormatterHelper.formattedTime(reminderTime))"
+            }
+        case .monthly:
+            if let reminderTime = item.reminderTime, let daysOfMonth = item.reminderDaysOfMonth {
+                let daysString = daysOfMonth.sorted().map { "\($0)" }.joined(separator: ", ")
+                return "Monthly on \(daysString) at \(DateFormatterHelper.formattedTime(reminderTime))"
+            }
+        }
+
+        return NSLocalizedString("Reminder", comment: "Reminder toolbar button")
+    }
+
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             // 顶部区域：分享按钮和下拉指示器
             HStack {
                 Spacer()
                 Image(systemName: "chevron.compact.down")
-                    .foregroundColor(.primary)
-                    .font(.system(size: 32))
+                    .foregroundColor(Color(hex: "0A0A0A").opacity(0.2))
+                    .font(.system(size: 24, weight: .regular))
+                    .padding(.top, 16)
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            .padding(.bottom, 5)
-            if isEditingTitle && !isReadOnly {
-                HStack {
-                    TextField("Type in here", text: $item.title)
-                        .font(.system(size: 20))
-                        .focused($isInputActive)
-                        .keyboardType(.default)
-                        .submitLabel(.done)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .padding()
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                self.isInputActive = true
-                            }
-                        }
-                        .onSubmit {
-                            let trimmedTitle = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !trimmedTitle.isEmpty {
-                                onSave(item)
-                                let generator = UIImpactFeedbackGenerator(style: .heavy); generator.impactOccurred()
-                                self.isEditingTitle = false
-                                presentation.wrappedValue.dismiss()
-                            }
-                        }
-                }
-                .padding(.leading, 4)
-                .padding(.trailing, 4)
-            } else {
-                HStack {
-                    Text(item.title)
-                        .font(.system(size: 21))
-                        .fontWeight(.semibold)
-                        .padding()
-                    Spacer()
-                }
-                .padding(.trailing, 2)
-                .padding(.leading, 4)
-                .contentShape(Rectangle()) // 使整个行区域可点击
-                .onTapGesture {
-                    if !isReadOnly {
-                        self.isEditingTitle = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            self.isInputActive = true
-                        }
-                    }
-                }
-            }
+            .frame(height: 64, alignment: .top)
+
+            titleView()
+                .padding(.top, 8)
+                .padding(.bottom, 24)
 
             // 子事项
             List {
                 if showingNewSubItemInput {
                     TextField("New Subitem", text: $newSubItemTitle)
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(Color(hex: "0A0A0A").opacity(0.8))
                         .focused($isNewSubItemInputActive) // 激活状态
                         .keyboardType(.default)
                         .submitLabel(.done)
@@ -217,109 +382,41 @@ struct InputView: View {
                         .onAppear {
                             isNewSubItemInputActive = true
                         }
+                        .subItemListRowStyle()
                 }
 
                 ForEach(Array(item.subItems.enumerated()), id: \.element.id) { index, subItem in
-                    // 标记为 done 的子事项
-                    if item.subItems[index].isDone {
-                        HStack(alignment: .top) {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.gray)
-                                .font(.system(size: 11)) // 调整 checkmark 的大小
-                                .offset(y: 6) // 调整 checkmark 的位置
-                                .offset(x: -1)
-                            Spacer().frame(width: 4)
-                            Text(item.subItems[index].title)
-                                .strikethrough()
-                                .foregroundColor(.gray)
-                                .lineLimit(nil)
-                            // 标记子事项为未完成
-                                .swipeActions(edge: .leading) {
-                                    if !isReadOnly {
-                                        Button {
-                                            item.subItems[index].isDone.toggle()
-                                            sortSubItems() // 重新排序，将未完成项移到前面
-                                            let generator = UIImpactFeedbackGenerator(style: .heavy); generator.impactOccurred()
-                                        } label: {
-                                            Label("", systemImage: "arrow.uturn.backward")
-                                        }
-                                        .tint(Color(hex: "3BBF5E"))
-                                    }
-                                }
-                            // 删除按钮
-                                .swipeActions(edge: .trailing) {
-                                    if !isReadOnly {
-                                        Button(role: .destructive) {
-                                            item.subItems.remove(at: index)
-                                            onSave(item)
-                                            let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
-                                        } label: {
-                                            Label("", systemImage: "trash")
-                                        }
-                                        .tint(Color(hex: "F55447"))
-                                    }
-                                }
+                    Group {
+                        if item.subItems[index].isDone && index > 0 && !item.subItems[index - 1].isDone {
+                            completedSectionDivider
                         }
-                    } else {
-                        if editingIndex == index {
-                            TextField("Subitem", text: $editingSubItemTitle, onEditingChanged: { isEditing in
-                                self.isEditingSubItem = isEditing
-                                if !isEditing {
-                                    // 编辑结束，更新数组
-                                    saveSubItem()
-                                }
-                            })
-                            .lineLimit(nil)
-                            .focused($isSubItemInputActive)
-                            .keyboardType(.default)
-                            .submitLabel(.done)
-                            .onSubmit {
-                                // 提交编辑，更新数组
-                                saveSubItem()
-                                let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
+
+                        // 标记为 done 的子事项
+                        if item.subItems[index].isDone {
+                            HStack(alignment: .top, spacing: 12) {
+                                Text("✓")
+                                    .font(.system(size: 17, weight: .regular))
+                                    .foregroundColor(Color(hex: "0A0A0A").opacity(0.2))
+                                    .frame(width: 14, height: 24, alignment: .leading)
+                                subItemText(item.subItems[index].title, isDone: true)
+                                Spacer(minLength: 0)
                             }
-                            .frame(minHeight: 44)
-                        } else {
-                            HStack(alignment: .top) {
-                                Image(systemName: "circle.fill")
-                                    .foregroundColor(.primary)
-                                    .font(.system(size: 6)) // 调整圆点的大小
-                                    .offset(y: 7) // 调整圆点的位置
-                                Text(item.subItems[index].title)
-                                    .lineLimit(nil)
-                                Spacer()
-                            }
-                            .contentShape(Rectangle()) // 使整个行区域可点击
-                            .onTapGesture {
-                                if !isReadOnly {
-                                    isNewSubItemInputActive = false
-                                    showingNewSubItemInput = false
-                                    editingIndex = index
-                                    // 初始化编辑文本
-                                    editingSubItemTitle = item.subItems[index].title
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        isSubItemInputActive = true
-                                    }
-                                }
-                            }
-                            // 标记子事项为完成
-                            .swipeActions(edge: .leading) {
+                            .subItemListRowStyle()
+                            // 标记子事项为未完成
+                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
                                 if !isReadOnly {
                                     Button {
                                         item.subItems[index].isDone.toggle()
-                                        sortSubItems()
-                                        let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
+                                        sortSubItems() // 重新排序，将未完成项移到前面
+                                        let generator = UIImpactFeedbackGenerator(style: .heavy); generator.impactOccurred()
                                     } label: {
-                                        Image("purecheck")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 12, height: 12)
+                                        Label("", systemImage: "arrow.uturn.backward")
                                     }
                                     .tint(Color(hex: "3BBF5E"))
                                 }
                             }
                             // 删除按钮
-                            .swipeActions(edge: .trailing) {
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 if !isReadOnly {
                                     Button(role: .destructive) {
                                         item.subItems.remove(at: index)
@@ -331,149 +428,93 @@ struct InputView: View {
                                     .tint(Color(hex: "F55447"))
                                 }
                             }
+                        } else {
+                            if editingIndex == index {
+                                TextField("Subitem", text: $editingSubItemTitle, onEditingChanged: { isEditing in
+                                    self.isEditingSubItem = isEditing
+                                    if !isEditing {
+                                        // 编辑结束，更新数组
+                                        saveSubItem()
+                                    }
+                                })
+                                .font(.system(size: 17, weight: .regular))
+                                .foregroundColor(Color(hex: "0A0A0A").opacity(0.8))
+                                .lineLimit(nil)
+                                .focused($isSubItemInputActive)
+                                .keyboardType(.default)
+                                .submitLabel(.done)
+                                .onSubmit {
+                                    // 提交编辑，更新数组
+                                    saveSubItem()
+                                    let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
+                                }
+                                .frame(minHeight: 44)
+                                .subItemListRowStyle()
+                            } else {
+                                HStack(alignment: .top, spacing: 12) {
+                                    Text("•")
+                                        .font(.system(size: 17, weight: .regular))
+                                        .foregroundColor(Color(hex: "0A0A0A").opacity(0.8))
+                                        .frame(width: 8, height: 24, alignment: .leading)
+                                    subItemText(item.subItems[index].title, isDone: false)
+                                    Spacer(minLength: 0)
+                                }
+                                .contentShape(Rectangle()) // 使整个行区域可点击
+                                .onTapGesture {
+                                    if !isReadOnly {
+                                        isNewSubItemInputActive = false
+                                        showingNewSubItemInput = false
+                                        editingIndex = index
+                                        // 初始化编辑文本
+                                        editingSubItemTitle = item.subItems[index].title
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            isSubItemInputActive = true
+                                        }
+                                    }
+                                }
+                                .subItemListRowStyle()
+                                // 标记子事项为完成
+                                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                    if !isReadOnly {
+                                        Button {
+                                            item.subItems[index].isDone.toggle()
+                                            sortSubItems()
+                                            let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
+                                        } label: {
+                                            Image("purecheck")
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(width: 12, height: 12)
+                                        }
+                                        .tint(Color(hex: "3BBF5E"))
+                                    }
+                                }
+                                // 删除按钮
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    if !isReadOnly {
+                                        Button(role: .destructive) {
+                                            item.subItems.remove(at: index)
+                                            onSave(item)
+                                            let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
+                                        } label: {
+                                            Label("", systemImage: "trash")
+                                        }
+                                        .tint(Color(hex: "F55447"))
+                                    }
+                                }
+                            }
                         }
                     }
                 }
                 .onDelete(perform: isReadOnly ? nil : deleteSubItem)
                 .onMove(perform: (isSubItemInputActive || isNewSubItemInputActive || isReadOnly) ? nil : moveSubItem)
             }
-            .padding(.trailing, 8)
-            .padding(.leading, 4)
+            .padding(.horizontal, 24)
+            .listStyle(PlainListStyle())
+            .modifier(HiddenListBackground())
+            .background(Color.white)
 
-            Spacer()
-            HStack {
-                if !isReadOnly {
-                    // 非只读模式：显示 + Subitem、Reminder、Share 三个按钮
-                    Spacer()
-                    HStack {
-                        Button(action: {
-                            addSubItem()
-                        }) {
-                            HStack {
-                                Image(systemName: "plus")
-                                Text("Subitem")
-                            }
-                        }
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 4)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Text("|")
-                        .padding(.horizontal, 0)
-                        .foregroundColor(.primary)
-                        .font(.system(size: 16))
-                    HStack {
-                        Button(action: {
-                            showReminderView = true
-                        }) {
-                            HStack {
-                                if let reminderType = item.reminderType {
-                                    switch reminderType {
-                                    case .single:
-                                        if let reminderDate = item.reminderDate {
-                                            if reminderDate > Date() {
-                                                Image(systemName: "clock.fill")
-                                                    .foregroundColor(.black)
-                                                Text(DateFormatterHelper.formattedDate(reminderDate))
-                                                    .foregroundColor(.black)
-                                                    .fontWeight(.medium)
-                                                    .lineLimit(1) // 限制为一行
-                                            } else {
-                                                Image(systemName: "clock")
-                                                Text(DateFormatterHelper.formattedDate(reminderDate))
-                                                    .lineLimit(1) // 限制为一行
-                                            }
-                                        } else {
-                                            // No reminder date set, show default
-                                            Image(systemName: "clock")
-                                            Text("Reminder")
-                                        }
-                                    case .daily:
-                                        if let reminderTime = item.reminderTime {
-                                            Image(systemName: "clock.fill")
-                                                .foregroundColor(.black)
-                                            Text("Daily at \(DateFormatterHelper.formattedTime(reminderTime))")
-                                                .foregroundColor(.black)
-                                                .fontWeight(.medium)
-                                                .lineLimit(1) // 限制为一行
-                                        } else {
-                                            // No time set
-                                            Image(systemName: "clock")
-                                            Text("Reminder")
-                                        }
-                                    case .weekly:
-                                        if let reminderTime = item.reminderTime, let weekdays = item.reminderWeekdays {
-                                            Image(systemName: "clock.fill")
-                                                .foregroundColor(.black)
-                                            let weekdaysString = weekdays.sorted().map { DateFormatterHelper.weekdaySymbol(for: $0) }.joined(separator: ", ")
-                                            Text("\(weekdaysString) \(DateFormatterHelper.formattedTime(reminderTime))")
-                                                .foregroundColor(.black)
-                                                .fontWeight(.medium)
-                                                .lineLimit(1) // 限制为一行
-                                        } else {
-                                            // No time or weekdays set
-                                            Image(systemName: "clock")
-                                            Text("Reminder")
-                                        }
-                                    case .monthly:
-                                        if let reminderTime = item.reminderTime, let daysOfMonth = item.reminderDaysOfMonth {
-                                            Image(systemName: "clock.fill")
-                                                .foregroundColor(.black)
-                                            let daysString = daysOfMonth.sorted().map { "\($0)" }.joined(separator: ", ")
-                                            Text("Monthly on \(daysString) at \(DateFormatterHelper.formattedTime(reminderTime))")
-                                                .foregroundColor(.black)
-                                                .fontWeight(.medium)
-                                                .lineLimit(1) // 限制为一行
-                                        } else {
-                                            // No time or days set
-                                            Image(systemName: "clock")
-                                            Text("Reminder")
-                                        }
-                                    }
-                                } else {
-                                    // No reminder set
-                                    Image(systemName: "clock")
-                                    Text("Reminder")
-                                }
-                            }
-                        }
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 4)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Text("|")
-                        .padding(.horizontal, 0)
-                        .foregroundColor(.primary)
-                        .font(.system(size: 16))
-                    HStack{
-                        Button(action: {
-                            generateAndShareImage()
-                        }) {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Share")
-                        }
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 4)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Spacer()
-                } else {
-                    // 只读模式：只显示 Share 按钮
-                    Spacer()
-                    Button(action: {
-                        generateAndShareImage()
-                    }) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Share")
-                        }
-                    }
-                    .foregroundColor(.primary)
-                    .padding(.horizontal, 2)
-                    Spacer()
-                }
-            }
-            .padding(.vertical, 20)
+            bottomToolbar
         }
         .sheet(isPresented: $showReminderView, onDismiss: {
             // 当 sheet 关闭时的处理
@@ -491,6 +532,7 @@ struct InputView: View {
                 })
                 .presentationDetents([.fraction(0.56)])
                 .presentationCornerRadius(30)
+                .edgeAttachedSheetStyle()
             } else {
                 ReminderView(item: $item, onSave: { updatedItem in
                     item = updatedItem
@@ -508,6 +550,7 @@ struct InputView: View {
                         .fill(Material.bar)
                 )
                 .shadow(radius: 30)
+                .edgeAttachedSheetStyle()
             }
         }
         .onAppear {
@@ -580,66 +623,40 @@ struct ShareableView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 顶部区域：下拉指示器（隐藏分享按钮）
-            
-                Spacer().frame(height: 60)
-            
-            
-            // 主事项标题
             HStack {
-                Text(item.title)
-                    .font(.system(size: 21))
-                    .fontWeight(.semibold)
-                    .padding()
+                Spacer()
+                Image(systemName: "chevron.compact.down")
+                    .foregroundColor(Color(hex: "0A0A0A").opacity(0.2))
+                    .font(.system(size: 24, weight: .regular))
+                    .padding(.top, 16)
                 Spacer()
             }
-            .padding(.trailing, 2)
-            .padding(.leading, 4)
-            .padding(.bottom, 12) // 增加与子事项的间距
+            .frame(height: 64, alignment: .top)
+
+            HStack {
+                Text(item.title)
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundColor(Color(hex: "0A0A0A").opacity(0.9))
+                    .lineSpacing(4)
+                    .lineLimit(nil)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 40, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
             
-            // 子事项列表
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(item.subItems.enumerated()), id: \.element.id) { index, subItem in
-                    VStack(spacing: 0) {
-                        HStack(alignment: .top, spacing: 0) {
-                            if subItem.isDone {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.gray)
-                                    .font(.system(size: 11))
-                                    .offset(y: 6)
-                                    .offset(x: -1)
-                                Spacer().frame(width: 6)
-                                Text(subItem.title)
-                                    .strikethrough()
-                                    .foregroundColor(.gray)
-                                    .lineLimit(nil)
-                            } else {
-                                Image(systemName: "circle.fill")
-                                    .foregroundColor(.primary)
-                                    .font(.system(size: 6))
-                                    .offset(y: 7)
-                                Spacer().frame(width: 6)
-                                Text(subItem.title)
-                                    .lineLimit(nil)
-                            }
-                            Spacer()
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .frame(minHeight: 44)
-                        
-                        // 分隔线
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(height: 0.5)
-                                .padding(.horizontal, 20)
+                    if subItem.isDone && index > 0 && !item.subItems[index - 1].isDone {
+                        completedSectionDivider
                     }
+
+                    shareSubItemRow(subItem)
                 }
             }
-            .padding(.trailing, 8)
-            .padding(.leading, 4)
+            .padding(.horizontal, 24)
             
-            // 动态空白间隔
             let screenHeight = UIScreen.main.bounds.height
             let contentHeight = calculateContentHeight()
             let remainingHeight = max(0, screenHeight - contentHeight - 46)
@@ -649,7 +666,6 @@ struct ShareableView: View {
                     .frame(height: remainingHeight)
             }
             
-            // Footer 水印区域
             HStack {
                 Spacer()
                 HStack(spacing: 4) {
@@ -660,7 +676,7 @@ struct ShareableView: View {
                     
                     Text("Pure To Do")
                         .font(.system(size: 12))
-                        .foregroundColor(.gray.opacity(0.6))
+                        .foregroundColor(Color(hex: "0A0A0A").opacity(0.3))
                 }
                 .padding(.top, 30)
                 .padding(.bottom, 10)
@@ -671,23 +687,59 @@ struct ShareableView: View {
             Spacer()
                 .frame(height: 20)
         }
-        .background(Color(UIColor.systemBackground))
+        .background(Color.white)
         .frame(width: UIScreen.main.bounds.width)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var completedSectionDivider: some View {
+        Rectangle()
+            .fill(Color.black.opacity(0.05))
+            .frame(height: 0.637)
+            .padding(.vertical, 6)
+    }
+
+    private func shareSubItemRow(_ subItem: TodoItem) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            if subItem.isDone {
+                Text("✓")
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundColor(Color(hex: "0A0A0A").opacity(0.2))
+                    .frame(width: 14, height: 24, alignment: .leading)
+            } else {
+                Text("•")
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundColor(Color(hex: "0A0A0A").opacity(0.8))
+                    .frame(width: 8, height: 24, alignment: .leading)
+            }
+
+            Text(subItem.title)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundColor(Color(hex: "0A0A0A").opacity(subItem.isDone ? 0.3 : 0.8))
+                .strikethrough(subItem.isDone)
+                .lineSpacing(4)
+                .lineLimit(nil)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, 4)
+        .padding(.vertical, 12)
     }
     
     // 计算内容高度的方法
     private func calculateContentHeight() -> CGFloat {
         // 顶部区域高度
-        let topAreaHeight: CGFloat = 24 + 12 + 12 // padding + chevron + spacing
+        let topAreaHeight: CGFloat = 64
         
         // 主事项标题高度
-        let titleHeight: CGFloat = 21 + 32 // font size + padding
+        let titleHeight: CGFloat = 22 + 8 + 24
         
         // 子事项列表高度
-        let subItemHeight: CGFloat = 44 // 每个子事项的最小高度
-        let subItemSpacing: CGFloat = 0.5 // 分隔线高度
-        let subItemsHeight = CGFloat(item.subItems.count) * subItemHeight + CGFloat(max(0, item.subItems.count - 1)) * subItemSpacing
+        let subItemHeight: CGFloat = 48
+        let completedDividerCount = zip(item.subItems, item.subItems.dropFirst()).filter { pair in
+            !pair.0.isDone && pair.1.isDone
+        }.count
+        let subItemsHeight = CGFloat(item.subItems.count) * subItemHeight + CGFloat(completedDividerCount) * (0.637 + 12)
         
         // Footer 区域高度
         let footerHeight: CGFloat = 20 + 12 + 10 + 20 // top padding + text height + bottom padding + bottom spacing

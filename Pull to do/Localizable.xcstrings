@@ -4,6 +4,9 @@
     "" : {
 
     },
+    " " : {
+
+    },
     "%@ %@" : {
       "localizations" : {
         "en" : {
@@ -222,6 +225,9 @@
           }
         }
       }
+    },
+    "•" : {
+
     },
     "← Swipe an item left to delete" : {
       "comment" : "Delete",
@@ -629,107 +635,6 @@
         }
       }
     },
-    "↓ Pull down the page to create a new" : {
-      "comment" : "Create new item",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ اسحب للأسفل للإضافة"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Ziehen Sie nach unten, um hinzuzufügen"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Τραβήξτε προς τα κάτω για προσθήκη"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Deslizar hacia abajo para agregar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Faites glisser vers le bas pour ajouter"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Tarik ke bawah untuk menambahkan"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Scorri verso il basso per aggiungere"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ 追加するには下に引っ張る"
-          }
-        },
-        "ko-KR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ 페이지를 아래로 당겨 새로 만들기"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Trek omlaag om toe te voegen"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Deslize para baixo para adicionar"
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Deslize para baixo para adicionar"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Потяните вниз, чтобы добавить"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ Kéo xuống trang để tạo mới"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ 下拉页面新建事项"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "↓ 下拉以添加"
-          }
-        }
-      }
-    },
     "↓ Pull down to create a new" : {
       "comment" : "Create new item",
       "extractionState" : "manual",
@@ -832,7 +737,108 @@
         }
       }
     },
-    "|" : {
+    "↓ Pull to add" : {
+      "comment" : "Create new item",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ اسحب للإضافة"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Ziehen zum Hinzufügen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Τραβήξτε για προσθήκη"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Tirar para añadir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Tirer pour ajouter"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Tarik untuk tambah"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Tira per aggiungere"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ 引いて追加"
+          }
+        },
+        "ko-KR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ 당겨서 추가"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Trek om toe te voegen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Puxe para adicionar"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Puxe para adicionar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Потяните, чтобы добавить"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ Kéo để thêm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ 下拉页面新建事项"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↓ 下拉以添加"
+          }
+        }
+      }
+    },
+    "✓" : {
 
     },
     "🥰 Leave a 5-star review for the hard-working developer!" : {
@@ -958,6 +964,7 @@
       }
     },
     "Are you sure you want to delete this category?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1449,6 +1456,7 @@
       }
     },
     "Category Name" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1648,6 +1656,107 @@
         }
       }
     },
+    "Completed" : {
+      "comment" : "Completed items",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مكتمل"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erledigt"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ολοκληρωμένα"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminé"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selesai"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "ko-KR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완료"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voltooid"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluídos"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluídos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завершено"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã xong"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成"
+          }
+        }
+      }
+    },
     "Daily" : {
       "localizations" : {
         "ar" : {
@@ -1753,6 +1862,7 @@
       }
     },
     "Delete" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2163,6 +2273,7 @@
       }
     },
     "Move to Category" : {
+      "comment" : "Move item to category sheet title",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2263,6 +2374,7 @@
       }
     },
     "New Category" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2798,6 +2910,7 @@
 
     },
     "Reminder" : {
+      "comment" : "Reminder toolbar button",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3301,6 +3414,7 @@
       }
     },
     "Share" : {
+      "comment" : "Share toolbar button",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3401,6 +3515,7 @@
       }
     },
     "Subitem" : {
+      "comment" : "Subitem toolbar button",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3501,6 +3616,7 @@
       }
     },
     "This category contains %lld to-do item%@. Deleting the category will also delete all the to-do items. Are you sure you want to continue?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
