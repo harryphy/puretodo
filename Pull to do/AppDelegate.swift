@@ -16,9 +16,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
         UNUserNotificationCenter.current().delegate = self
-        // 设置导航栏的背景颜色为白色
+        // Keep navigation surfaces flat and opaque across system versions.
+        let navigationAppearance = UINavigationBarAppearance()
+        navigationAppearance.configureWithOpaqueBackground()
+        navigationAppearance.backgroundColor = .white
+        navigationAppearance.shadowColor = .clear
+
+        UINavigationBar.appearance().standardAppearance = navigationAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navigationAppearance
+        UINavigationBar.appearance().compactAppearance = navigationAppearance
         UINavigationBar.appearance().backgroundColor = .white
         UINavigationBar.appearance().barTintColor = .white
+        UINavigationBar.appearance().tintColor = .black
         UINavigationBar.appearance().shadowImage = UIImage()
         // 加载数据并刷新小组件
         loadDataAndRefreshWidget()
@@ -34,8 +43,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                     // 老用户或已购买完整版的用户，解锁全部功能
                     self.unlockAllFeatures()
                 } else {
-                    // 新用户，未购买完整版，按照默认流程
-                    self.setupForNewUser()
+                    // 收据验证失败和真实未购买都会返回 false/false。不要因为临时验证失败清除本地已有权限。
+                    if !UserDefaults.standard.bool(forKey: "isAllFeaturesUnlocked") {
+                        self.setupForNewUser()
+                    }
                 }
             }
         }

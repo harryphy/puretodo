@@ -7,6 +7,145 @@
 import SwiftUI
 import MessageUI
 
+struct FlatButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .opacity(configuration.isPressed ? 0.65 : 1.0)
+            .animation(.easeInOut(duration: 0.08), value: configuration.isPressed)
+    }
+}
+
+extension View {
+    func flatButtonStyle() -> some View {
+        buttonStyle(FlatButtonStyle())
+    }
+
+    func hideSystemScrollBackground() -> some View {
+        modifier(HiddenSystemScrollBackgroundModifier())
+    }
+}
+
+private struct HiddenSystemScrollBackgroundModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content.scrollContentBackground(.hidden)
+        } else {
+            content
+                .onAppear {
+                    UITableView.appearance().backgroundColor = .clear
+                }
+        }
+    }
+}
+
+struct FlatModalHeader<Leading: View, Trailing: View>: View {
+    let title: String
+    let showsSeparator: Bool
+    let usesBackground: Bool
+    let leading: Leading
+    let trailing: Trailing
+
+    init(
+        title: String,
+        showsSeparator: Bool = true,
+        usesBackground: Bool = true,
+        @ViewBuilder leading: () -> Leading,
+        @ViewBuilder trailing: () -> Trailing
+    ) {
+        self.title = title
+        self.showsSeparator = showsSeparator
+        self.usesBackground = usesBackground
+        self.leading = leading()
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            leading
+                .frame(width: 120, alignment: .leading)
+
+            Spacer(minLength: 0)
+
+            Text(title)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+
+            trailing
+                .frame(width: 120, alignment: .trailing)
+        }
+        .frame(height: 52)
+        .padding(.horizontal, 20)
+        .background(usesBackground ? Color.white : Color.clear)
+        .overlay(
+            Group {
+                if showsSeparator {
+                    Divider()
+                        .background(Color.black.opacity(0.08))
+                }
+            },
+            alignment: .bottom
+        )
+    }
+}
+
+struct FlatConfirmDialog: View {
+    let title: String
+    let message: String
+    let destructiveTitle: String
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(title)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+                .padding(.top, 22)
+                .padding(.horizontal, 22)
+
+            Text(message)
+                .font(.system(size: 15))
+                .foregroundColor(.primary.opacity(0.72))
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .padding(.top, 10)
+                .padding(.horizontal, 24)
+
+            Divider()
+                .padding(.top, 22)
+
+            HStack(spacing: 0) {
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                }
+                .flatButtonStyle()
+
+                Divider()
+                    .frame(height: 52)
+
+                Button(action: onConfirm) {
+                    Text(destructiveTitle)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Color(hex: "F55447"))
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                }
+                .flatButtonStyle()
+            }
+        }
+        .frame(maxWidth: 320)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+    }
+}
+
 struct RatingView: View {
     @State private var isMailViewPresented = false
     @State private var isRatingViewPresented = false
@@ -91,8 +230,9 @@ struct PurchasePromptView: View {
                 .background(Color.black.opacity(0.9))
                 .foregroundColor(.white)
                 .cornerRadius(10)
-        }
-        .padding(.horizontal, 28)
+	        }
+	        .flatButtonStyle()
+	        .padding(.horizontal, 28)
 
         Spacer().frame(height: 20)
 
@@ -114,8 +254,9 @@ struct PurchasePromptView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(Color.black, lineWidth: 1.6)
             )
-        }
-        .padding(.horizontal, 28)
+	        }
+	        .flatButtonStyle()
+	        .padding(.horizontal, 28)
 
         Spacer().frame(height: 56)
 
@@ -126,8 +267,9 @@ struct PurchasePromptView: View {
                 .font(.system(size: 18))
                 .frame(maxWidth: .infinity)
                 .foregroundColor(.black)
-        }
-        .padding(.horizontal, 28)
+	        }
+	        .flatButtonStyle()
+	        .padding(.horizontal, 28)
         .frame(height: 20)
         Spacer().frame(height: 36)
     }
@@ -175,153 +317,143 @@ struct DonePage: View {
     }
 
     var body: some View {
-        List {
-            VStack {
-                Spacer().frame(height: 2)
-                Image("backgroundbanner")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 28))
-                    .clipped() // 防止图片溢出
-                    .padding(6)
-                Spacer()
-            }
+        VStack(spacing: 0) {
+            donePageHeader
 
-            .overlay(
+            List {
                 VStack {
-                    Spacer().frame(height: 60)
-
-                    // 显示当前月份完成的事项数
-                    Image("checkDE")
+                    Spacer().frame(height: 2)
+                    Image("backgroundbanner")
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 36)
-                        .padding(.leading,0)
-
-                    Spacer().frame(height: 10)
-                    Text("\(currentMonthDoneCount) Items Finished in \(currentMonthName())")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(Color.white)
-
-                    Spacer().frame(height: 6)
-
-                    Text("\(doneCount) Done Items Recorded")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color.white.opacity(0.45))
-
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                        .clipped() // 防止图片溢出
+                        .padding(6)
                     Spacer()
                 }
-            )
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 0, trailing: 18))
 
-            // 已完成的事项列表
-            ForEach(sortedDates, id: \.self) { date in
-                Section(header: Text(date, formatter: itemFormatter)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color.black.opacity(0.25))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .listRowBackground(Color.white)
-                ) {
-                    ForEach(groupedItems[date] ?? [], id: \.id) { item in
-                        VStack() {
-                            Spacer().frame(height: 10)
-                            HStack(alignment: .top) {
-                                Text(item.title)
-                                    .strikethrough()
-                                    .foregroundColor(Color.black.opacity(0.8))
-                                    .fontWeight(.medium)
-                                Spacer()  // 添加一个Spacer来填满整行
-                                if item.subItems.count > 0 {
-                                    Text("\(item.subItems.count)")
-                                        .foregroundColor(Color.black.opacity(0.25))
-                                        .font(.body)
-                                        .padding(.trailing, 2)
-                                }
-                            }
-                            Spacer().frame(height: 10)
-                        }
-                        .contentShape(Rectangle()) // 使整行都能响应点击事件
-                        .onTapGesture {
-                            self.selectedDetailItem = item
-                            self.showDetailView = true // 准备显示详情视图
-                        }
-                        // 滑动删除的功能
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                deleteDoneItem(item, on: date)
-                            } label: {
-                                Label("", systemImage: "trash.fill")
-                            }
-                            .tint(Color(hex: "F55447"))
-                        }
-                        // 滑动撤销的功能
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            Button {
-                                withAnimation {
-                                    undoDoneItem(item)
-                                }
-                            } label: {
-                                Label("", systemImage: "arrow.uturn.backward")
-                            }
-                            .tint(Color(hex: "3BBF5E"))
-                        }
-                    }
-                    .onDelete { offsets in
-                        deleteDoneItems(at: offsets, on: date)
-                    }
-                }
-                .frame(minHeight: 44) // 确保行有最小高度
-                .listRowSeparator(.hidden)
-                .padding(.top, 0)
                 .overlay(
-                    Divider()
-                        .frame(height: 1)
-                        .background(Color.black)
-                        .opacity(0.06)
-                        .padding(.bottom, 0)
-                    , alignment: .bottom
-                )
-                .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 0, trailing: 28))
-            }
-        }
-        .listStyle(PlainListStyle())
-        .navigationBarBackButtonHidden(true) // 隐藏默认的返回按钮
-        .navigationBarItems(
-            leading: Button(action: {
-                presentationMode.wrappedValue.dismiss() // 点击自定义返回按钮时关闭视图
-            }) {
-                Image(systemName: "chevron.left") // 仅使用箭头作为自定义返回按钮
-                    .foregroundColor(.primary) // 匹配主题颜色
-                    .font(.system(size: 14, weight: .medium))
-                Text("To Do")
-                    .foregroundColor(.primary)
-                    .font(.system(size: 18, weight: .medium))
-            },
-            trailing: Button(action: {
-                shareApp()
-            }) {
-                Image(systemName: "square.and.arrow.up")
-                    .foregroundColor(.primary)
-                    .font(.system(size: 16, weight: .medium))
-            }
-        )
-        .navigationBarTitleDisplayMode(.inline)
-        .simultaneousGesture(
-            DragGesture()
-                .onChanged { value in
-                    let isFromEdge = value.startLocation.x < 25
-                    let hasEnoughTranslation = value.translation.width > 5
-                    let isRightDirection = value.translation.width > 0
-                    
-                    if isFromEdge && hasEnoughTranslation && isRightDirection {
-                        // 触发返回操作
-                        presentationMode.wrappedValue.dismiss()
+                    VStack {
+                        Spacer().frame(height: 60)
+
+                        // 显示当前月份完成的事项数
+                        Image("checkDE")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 36)
+                            .padding(.leading,0)
+
+                        Spacer().frame(height: 10)
+                        Text("\(currentMonthDoneCount) Items Finished in \(currentMonthName())")
+                            .font(.headline)
+                            .fontWeight(.medium)
+                            .foregroundColor(Color.white)
+
+                        Spacer().frame(height: 6)
+
+                        Text("\(doneCount) Done Items Recorded")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.white.opacity(0.45))
+
+                        Spacer()
                     }
+                )
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 0, trailing: 18))
+
+                // 已完成的事项列表
+                ForEach(sortedDates, id: \.self) { date in
+                    Section(header: Text(date, formatter: itemFormatter)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(Color.black.opacity(0.25))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .listRowBackground(Color.white)
+                    ) {
+                        ForEach(groupedItems[date] ?? [], id: \.id) { item in
+                            VStack() {
+                                Spacer().frame(height: 10)
+                                HStack(alignment: .top) {
+                                    Text(item.title)
+                                        .strikethrough()
+                                        .foregroundColor(Color.black.opacity(0.8))
+                                        .fontWeight(.regular)
+                                    Spacer()  // 添加一个Spacer来填满整行
+                                    if item.subItems.count > 0 {
+                                        Text("\(item.subItems.count)")
+                                            .foregroundColor(Color.black.opacity(0.25))
+                                            .font(.body)
+                                            .padding(.trailing, 2)
+                                    }
+                                }
+                                Spacer().frame(height: 10)
+                            }
+                            .contentShape(Rectangle()) // 使整行都能响应点击事件
+                            .onTapGesture {
+                                self.selectedDetailItem = item
+                                self.showDetailView = true // 准备显示详情视图
+                            }
+                            // 滑动删除的功能
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    deleteDoneItem(item, on: date)
+                                } label: {
+                                    Label("", systemImage: "trash.fill")
+                                }
+                                .tint(Color(hex: "F55447"))
+                            }
+                            // 滑动撤销的功能
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button {
+                                    withAnimation {
+                                        undoDoneItem(item)
+                                    }
+                                } label: {
+                                    Label("", systemImage: "arrow.uturn.backward")
+                                }
+                                .tint(Color(hex: "3BBF5E"))
+                            }
+                        }
+                        .onDelete { offsets in
+                            deleteDoneItems(at: offsets, on: date)
+                        }
+                    }
+                    .frame(minHeight: 44) // 确保行有最小高度
+                    .listRowSeparator(.hidden)
+                    .padding(.top, 0)
+                    .overlay(
+                        Divider()
+                            .frame(height: 1)
+                            .background(Color.black)
+                            .opacity(0.06)
+                            .padding(.bottom, 0)
+                        , alignment: .bottom
+                    )
+                    .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 0, trailing: 28))
                 }
+            }
+            .listStyle(PlainListStyle())
+        }
+        .navigationBarBackButtonHidden(true) // 隐藏默认的返回按钮
+        .navigationBarHidden(true)
+        .overlay(
+            HStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: 25)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if value.translation.width > 5 {
+                                    presentationMode.wrappedValue.dismiss()
+                                }
+                            }
+                    )
+
+                Spacer()
+            }
         )
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DismissDonePage"))) { _ in
             // 接收到返回通知时执行返回操作
@@ -346,6 +478,41 @@ struct DonePage: View {
                 // showDetailView 被设置为 true，但 selectedDetailItem 为 nil 时的处理
             }
         }
+    }
+
+    private var donePageHeader: some View {
+        HStack(spacing: 0) {
+            Button(action: {
+                presentationMode.wrappedValue.dismiss()
+            }) {
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .regular))
+                    Text("To Do")
+                        .font(.system(size: 18, weight: .regular))
+                }
+                .foregroundColor(Color(hex: "2A2A2A"))
+                .frame(minWidth: 84, minHeight: 48, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .flatButtonStyle()
+
+            Spacer()
+
+            Button(action: {
+                shareApp()
+            }) {
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundColor(Color(hex: "2A2A2A"))
+                    .font(.system(size: 22, weight: .regular))
+                    .frame(width: 52, height: 48)
+                    .contentShape(Rectangle())
+            }
+            .flatButtonStyle()
+        }
+        .frame(height: 52)
+        .padding(.horizontal, 22)
+        .background(Color.white)
     }
     
     // MARK: - 私有方法
@@ -459,6 +626,7 @@ struct CategoryDrawerView: View {
     @Binding var pinnedItems: [TodoItem]
     @State private var showAddCategorySheet = false
     @State private var newCategoryName = ""
+    private let drawerBackgroundColor = Color(hex: "FAFAFA")
     
     // 计算属性：分离"To Do"分类和其他分类
     private var todoCategory: Category? {
@@ -467,6 +635,15 @@ struct CategoryDrawerView: View {
     
     private var otherCategories: [Category] {
         categories.filter { $0.name != "To Do" }
+    }
+
+    private var windowSafeAreaInsets: UIEdgeInsets {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first else {
+            return .zero
+        }
+
+        return window.safeAreaInsets
     }
     
     // 计算指定分类的待办事项数量
@@ -486,14 +663,21 @@ struct CategoryDrawerView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            // 抽屉内容
-            VStack(alignment: .leading, spacing: 0) {
+            let safeAreaTop = max(geometry.safeAreaInsets.top, windowSafeAreaInsets.top)
+            let safeAreaBottom = max(geometry.safeAreaInsets.bottom, windowSafeAreaInsets.bottom)
+
+            ZStack(alignment: .topLeading) {
+                drawerBackgroundColor
+                    .ignoresSafeArea()
+
+                // 抽屉内容
+                VStack(alignment: .leading, spacing: 0) {
                     // 标题
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Categories")
-                            .font(.system(size: 28, weight: .bold))
+                            .font(.system(size: 28, weight: .medium))
                             .foregroundColor(.black)
-                            .padding(.top, 52)
+                            .padding(.top, safeAreaTop + 42)
                             .padding(.horizontal, 28)
                         
                     }
@@ -546,6 +730,8 @@ struct CategoryDrawerView: View {
                         .onMove(perform: moveOtherCategories)
                     }
                     .listStyle(PlainListStyle())
+                    .hideSystemScrollBackground()
+                    .background(drawerBackgroundColor)
                     .padding(.top, 32)
                     
                     Spacer()
@@ -568,11 +754,14 @@ struct CategoryDrawerView: View {
                         //.background(Color.primary.opacity(0.1))
                         //.cornerRadius(12)
                     }
+                    .flatButtonStyle()
                     .padding(.horizontal, 28)
-                    .padding(.bottom, 22)
+                    .padding(.bottom, safeAreaBottom + 22)
                 }
-                .frame(width: geometry.size.width * 0.8)
-                .background(Color.white)
+            }
+                .frame(width: geometry.size.width * 0.8, height: geometry.size.height, alignment: .topLeading)
+                .background(drawerBackgroundColor.ignoresSafeArea())
+                .clipped()
                 .shadow(color: .black.opacity(0.1), radius: 10, x: 5, y: 0)
                 .gesture(
                     DragGesture()
@@ -717,7 +906,7 @@ struct CategoryRowView: View {
                 HStack(spacing: 16) {
                     // 分类名称
                     Text(category.name)
-                        .font(.system(size: 18, weight: isSelected ? .bold : .regular))
+                        .font(.system(size: 18, weight: isSelected ? .medium : .regular))
                         .foregroundColor(.primary)
                     
                     Spacer()
@@ -754,7 +943,22 @@ struct AddCategoryView: View {
     @State private var errorMessage = ""  // 添加错误信息
     
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            FlatModalHeader(title: "New Category", showsSeparator: false) {
+                Button("Cancel") {
+                    onCancel()
+                }
+                .foregroundColor(.black)
+                .flatButtonStyle()
+            } trailing: {
+                Button("Save") {
+                    validateAndSave()
+                }
+                .foregroundColor(.black)
+                .disabled(categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .flatButtonStyle()
+            }
+
             VStack(spacing: 28) {
                 // 分类名称输入
                 VStack(alignment: .leading, spacing: 6) {
@@ -792,21 +996,6 @@ struct AddCategoryView: View {
                 Spacer()
             }
             .padding(24)
-            .navigationTitle("New Category")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("Cancel") {
-                    onCancel()
-                }
-                .foregroundColor(.black)
-                .padding(.leading, 8),
-                trailing: Button("Save") {
-                    validateAndSave()
-                }
-                .foregroundColor(.black)
-                .disabled(categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .padding(.trailing, 8)
-            )
         }
         .padding(.top, 8)
         .onAppear {

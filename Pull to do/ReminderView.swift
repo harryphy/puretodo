@@ -29,7 +29,41 @@ struct ReminderView: View {
     }
     
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                Button("Remove Reminder") {
+                    onCancel()
+                    presentationMode.wrappedValue.dismiss()
+                    triggerHapticFeedback()
+                }
+                .font(.system(size: 15, weight: .regular))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .fixedSize(horizontal: true, vertical: false)
+                .foregroundColor(.black)
+                .flatButtonStyle()
+
+                Spacer(minLength: 8)
+
+                Button(action: {
+                    saveReminder()
+                    onSave(item)
+                    presentationMode.wrappedValue.dismiss()
+                    triggerHapticFeedback()
+                }) {
+                    Text("Save Reminder")
+                        .font(.system(size: 15))
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
+                .foregroundColor(.black)
+                .flatButtonStyle()
+            }
+            .frame(height: 52)
+            .padding(.horizontal, 24)
+            .background(Color.clear)
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Picker("Reminder Type", selection: $selectedReminderType) {
@@ -95,35 +129,13 @@ struct ReminderView: View {
                     }
                 }
             }
-            .navigationBarTitle("", displayMode: .inline)
-            .navigationBarItems(
-                leading: VStack {
-                    Spacer().frame(height: 12)
-                    Button("Remove Reminder") {
-                        onCancel()
-                        presentationMode.wrappedValue.dismiss()
-                        triggerHapticFeedback()
-                    }
-                    .tint(.black)
-                },
-                trailing: VStack {
-                    Spacer().frame(height: 8)
-                    Button(action: {
-                        saveReminder()
-                        onSave(item)
-                        presentationMode.wrappedValue.dismiss()
-                        triggerHapticFeedback()
-                    }) {
-                        Text("Save Reminder")
-                            .fontWeight(.medium)
-                    }
-                    .tint(.black)
-                }
-            )
             .onAppear {
                 initializeValues()
             }
-        }.padding(.horizontal,6)
+        }
+        .padding(.horizontal, 6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.white.ignoresSafeArea())
     }
     
     private func initializeValues() {
