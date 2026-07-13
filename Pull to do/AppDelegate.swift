@@ -55,6 +55,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
 
     func loadDataAndRefreshWidget() {
+        DataStore.shared.refreshWidgetSnapshot()
         // 通知 WidgetKit 刷新小组件
         WidgetCenter.shared.reloadAllTimelines()
     }

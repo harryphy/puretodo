@@ -6,11 +6,13 @@
 
 import SwiftUI
 import UserNotifications
+import PhotosUI
+import AVFoundation
 
 private extension View {
     func subItemListRowStyle() -> some View {
         self
-            .padding(.vertical, 6)
+            .padding(.vertical, 10)
             .contentShape(Rectangle())
             .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 0))
             .listRowSeparator(.hidden)
@@ -25,6 +27,43 @@ private struct HiddenListBackground: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+private struct ImageSourceSheet: View {
+    let onCamera: () -> Void
+    let onLibrary: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: onCamera) {
+                Label("Take Photo", systemImage: "camera")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 52)
+                    .contentShape(Rectangle())
+            }
+
+            Divider()
+
+            Button(action: onLibrary) {
+                HStack(spacing: 8) {
+                    Image("imageIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 18, height: 18)
+                    Text("Choose from Library")
+                }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 52)
+                    .contentShape(Rectangle())
+            }
+        }
+        .padding(.top, 24)
+        .font(.system(size: 17, weight: .regular))
+        .foregroundColor(Color(hex: "0A0A0A"))
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.white.ignoresSafeArea())
     }
 }
 
@@ -51,6 +90,12 @@ struct InputView: View {
     @State private var showShareSheet = false // 显示分享界面
     @State private var shareImage: UIImage? // 要分享的图片
     @State private var shareFileURL: URL? // 要分享的文件URL
+    @State private var showPhotoLibrary = false
+    @State private var showCamera = false
+    @State private var showImageSourceDialog = false
+    @State private var imageImportError: TodoImageImportError?
+    @State private var editingImageID: UUID?
+    @State private var imagePendingDeletion: TodoImageAttachment?
     @Environment(\.presentationMode) var presentation
     private func sortSubItems() {
         item.subItems.sort { !$0.isDone && $1.isDone }
@@ -131,8 +176,9 @@ struct InputView: View {
         }
     }
 
-    private func saveSubItem() {
+    private func saveSubItem(ifEditing expectedIndex: Int? = nil) {
         if let index = editingIndex {
+            guard expectedIndex == nil || expectedIndex == index else { return }
             let trimmedTitle = editingSubItemTitle.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmedTitle.isEmpty {
                 item.subItems[index].title = trimmedTitle
@@ -141,6 +187,41 @@ struct InputView: View {
             }
             editingIndex = nil
             isSubItemInputActive = false
+            isEditingSubItem = false
+        }
+    }
+
+    private func beginEditingSubItem(at index: Int) {
+        guard !isReadOnly, item.subItems.indices.contains(index) else { return }
+
+        if editingIndex != nil {
+            saveSubItem()
+        }
+        isInputActive = false
+        isNewSubItemInputActive = false
+        showingNewSubItemInput = false
+        editingSubItemTitle = item.subItems[index].title
+        editingIndex = index
+        isEditingSubItem = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            guard editingIndex == index else { return }
+            isSubItemInputActive = true
+        }
+    }
+
+    private func submitTitle() {
+        let trimmedTitle = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTitle.isEmpty {
+            item.title = trimmedTitle
+            onSave(item)
+            let generator = UIImpactFeedbackGenerator(style: .heavy)
+            generator.impactOccurred()
+            isEditingTitle = false
+            isInputActive = false
+            if isNewItem {
+                presentation.wrappedValue.dismiss()
+            }
         }
     }
 
@@ -167,14 +248,16 @@ struct InputView: View {
     @ViewBuilder
     private func titleView() -> some View {
         if isEditingTitle && !isReadOnly {
-            TextField("Type in here", text: $item.title)
+            TextField("Type in here", text: $item.title, axis: .vertical)
                 .font(.system(size: 22, weight: .medium))
                 .foregroundColor(Color(hex: "0A0A0A").opacity(0.9))
+                .lineSpacing(4)
+                .lineLimit(1...4)
                 .focused($isInputActive)
                 .keyboardType(.default)
                 .submitLabel(.done)
                 .textFieldStyle(PlainTextFieldStyle())
-                .frame(height: 40, alignment: .leading)
+                .frame(minHeight: 40, alignment: .leading)
                 .padding(.horizontal, 24)
                 .onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -182,13 +265,12 @@ struct InputView: View {
                     }
                 }
                 .onSubmit {
-                    let trimmedTitle = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmedTitle.isEmpty {
-                        onSave(item)
-                        let generator = UIImpactFeedbackGenerator(style: .heavy); generator.impactOccurred()
-                        self.isEditingTitle = false
-                        presentation.wrappedValue.dismiss()
-                    }
+                    submitTitle()
+                }
+                .onChange(of: item.title) { newValue in
+                    guard newValue.contains(where: { $0.isNewline }) else { return }
+                    item.title = newValue.filter { !$0.isNewline }
+                    submitTitle()
                 }
         } else {
             HStack {
@@ -204,6 +286,9 @@ struct InputView: View {
             .contentShape(Rectangle())
             .onTapGesture {
                 if !isReadOnly {
+                    if editingIndex != nil {
+                        saveSubItem()
+                    }
                     self.isEditingTitle = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         self.isInputActive = true
@@ -226,7 +311,7 @@ struct InputView: View {
         Rectangle()
             .fill(Color.black.opacity(0.05))
             .frame(height: 0.637)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.white)
@@ -254,6 +339,9 @@ struct InputView: View {
 
     private var reminderToolbarButton: some View {
         Button {
+            if editingIndex != nil {
+                saveSubItem()
+            }
             withAnimation(.easeInOut(duration: 0.22)) {
                 showReminderView = true
             }
@@ -283,27 +371,42 @@ struct InputView: View {
             .padding(.horizontal, 3)
     }
 
+    private var shareToolbarButton: some View {
+        Button {
+            if editingIndex != nil {
+                saveSubItem()
+            }
+            generateAndShareImage()
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 16, weight: .regular))
+                .frame(width: 16, height: 16)
+                .frame(width: 40, height: 21)
+        }
+        .foregroundColor(Color(hex: "0A0A0A"))
+        .accessibilityLabel(Text("Share"))
+        .flatButtonStyle()
+    }
+
     private var bottomToolbar: some View {
         HStack(spacing: 0) {
             if !isReadOnly {
+                imageToolbarMenu
+                toolbarDivider
                 toolbarButton(icon: "plus", title: NSLocalizedString("Subitem", comment: "Subitem toolbar button")) {
                     addSubItem()
                 }
                 toolbarDivider
                 reminderToolbarButton
                 toolbarDivider
-                toolbarButton(icon: "square.and.arrow.up", title: NSLocalizedString("Share", comment: "Share toolbar button")) {
-                    generateAndShareImage()
-                }
+                shareToolbarButton
             } else {
                 Spacer()
-                toolbarButton(icon: "square.and.arrow.up", title: NSLocalizedString("Share", comment: "Share toolbar button")) {
-                    generateAndShareImage()
-                }
+                shareToolbarButton
                 Spacer()
             }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 12)
         .padding(.top, 20)
         .padding(.bottom, 20)
         .frame(height: 62, alignment: .top)
@@ -314,6 +417,88 @@ struct InputView: View {
                 .frame(height: 0.637),
             alignment: .top
         )
+    }
+
+    private var imageToolbarMenu: some View {
+        Button {
+            if editingIndex != nil {
+                saveSubItem()
+            }
+            showImageSourceDialog = true
+        } label: {
+            HStack(spacing: 8) {
+                Image("imageIcon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                Text("Image")
+                    .font(.system(size: 15, weight: .regular))
+                    .tracking(-0.01)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .foregroundColor(Color(hex: "0A0A0A"))
+            .frame(height: 21)
+            .frame(maxWidth: .infinity)
+        }
+        .flatButtonStyle()
+    }
+
+    private func importSelectedPhotos(_ photos: [Data]) {
+        let remaining = 20 - TodoImageStore.shared.images(for: item.id).count
+        guard remaining > 0 else { imageImportError = .limitReached(remaining: 0); return }
+        Task {
+            for data in photos.prefix(remaining) {
+                do {
+                    try TodoImageStore.shared.importImageData(data, into: item.id)
+                } catch let error as TodoImageImportError {
+                    imageImportError = error
+                    break
+                } catch {
+                    imageImportError = .processingFailed
+                    break
+                }
+            }
+            if photos.count > remaining { imageImportError = .limitReached(remaining: remaining) }
+        }
+    }
+
+    private func requestCamera() {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else { imageImportError = .cameraUnavailable; return }
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized: showCamera = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async { if granted { showCamera = true } else { imageImportError = .cameraPermissionDenied } }
+            }
+        case .denied, .restricted: imageImportError = .cameraPermissionDenied
+        @unknown default: imageImportError = .cameraUnavailable
+        }
+    }
+
+    private func chooseCameraFromImageSheet() {
+        showImageSourceDialog = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            requestCamera()
+        }
+    }
+
+    private func chooseLibraryFromImageSheet() {
+        showImageSourceDialog = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            showPhotoLibrary = true
+        }
+    }
+
+    private func importCameraImage(_ image: UIImage) {
+        do {
+            guard let data = image.jpegData(compressionQuality: 1) else { throw TodoImageImportError.processingFailed }
+            try TodoImageStore.shared.importImageData(data, into: item.id)
+        } catch let error as TodoImageImportError {
+            imageImportError = error
+        } catch {
+            imageImportError = .processingFailed
+        }
     }
 
     private var hasReminder: Bool {
@@ -368,15 +553,28 @@ struct InputView: View {
 
             // 子事项
             List {
+                TodoImageGrid(todoID: item.id, isReadOnly: isReadOnly, editingImageID: $editingImageID)
+                    // The List already has the same 24pt horizontal inset as the title.
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: item.subItems.isEmpty ? 8 : 16, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.white)
+
                 if showingNewSubItemInput {
-                    TextField("New Subitem", text: $newSubItemTitle)
+                    TextField("New Subitem", text: $newSubItemTitle, axis: .vertical)
                         .font(.system(size: 17, weight: .regular))
                         .foregroundColor(Color(hex: "0A0A0A").opacity(0.8))
+                        .lineSpacing(4)
+                        .lineLimit(1...4)
                         .focused($isNewSubItemInputActive) // 激活状态
                         .keyboardType(.default)
                         .submitLabel(.done)
                         .textFieldStyle(PlainTextFieldStyle())
                         .onSubmit {
+                            saveOrCloseNewSubItem()
+                        }
+                        .onChange(of: newSubItemTitle) { newValue in
+                            guard newValue.contains(where: { $0.isNewline }) else { return }
+                            newSubItemTitle = newValue.filter { !$0.isNewline }
                             saveOrCloseNewSubItem()
                         }
                         .onAppear {
@@ -398,6 +596,7 @@ struct InputView: View {
                                     .font(.system(size: 17, weight: .regular))
                                     .foregroundColor(Color(hex: "0A0A0A").opacity(0.2))
                                     .frame(width: 14, height: 24, alignment: .leading)
+                                    .offset(y: -1)
                                 subItemText(item.subItems[index].title, isDone: true)
                                 Spacer(minLength: 0)
                             }
@@ -430,23 +629,22 @@ struct InputView: View {
                             }
                         } else {
                             if editingIndex == index {
-                                TextField("Subitem", text: $editingSubItemTitle, onEditingChanged: { isEditing in
-                                    self.isEditingSubItem = isEditing
-                                    if !isEditing {
-                                        // 编辑结束，更新数组
-                                        saveSubItem()
-                                    }
-                                })
+                                TextField("Subitem", text: $editingSubItemTitle, axis: .vertical)
                                 .font(.system(size: 17, weight: .regular))
                                 .foregroundColor(Color(hex: "0A0A0A").opacity(0.8))
-                                .lineLimit(nil)
+                                .lineSpacing(4)
+                                .lineLimit(1...4)
                                 .focused($isSubItemInputActive)
                                 .keyboardType(.default)
                                 .submitLabel(.done)
                                 .onSubmit {
                                     // 提交编辑，更新数组
                                     saveSubItem()
-                                    let generator = UIImpactFeedbackGenerator(style: .light); generator.impactOccurred()
+                                }
+                                .onChange(of: editingSubItemTitle) { newValue in
+                                    guard newValue.contains(where: { $0.isNewline }) else { return }
+                                    editingSubItemTitle = newValue.filter { !$0.isNewline }
+                                    saveSubItem()
                                 }
                                 .frame(minHeight: 44)
                                 .subItemListRowStyle()
@@ -456,22 +654,16 @@ struct InputView: View {
                                         .font(.system(size: 17, weight: .regular))
                                         .foregroundColor(Color(hex: "0A0A0A").opacity(0.8))
                                         .frame(width: 8, height: 24, alignment: .leading)
+                                        .offset(y: -1)
                                     subItemText(item.subItems[index].title, isDone: false)
                                     Spacer(minLength: 0)
                                 }
                                 .contentShape(Rectangle()) // 使整个行区域可点击
-                                .onTapGesture {
-                                    if !isReadOnly {
-                                        isNewSubItemInputActive = false
-                                        showingNewSubItemInput = false
-                                        editingIndex = index
-                                        // 初始化编辑文本
-                                        editingSubItemTitle = item.subItems[index].title
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            isSubItemInputActive = true
-                                        }
+                                .highPriorityGesture(
+                                    TapGesture().onEnded {
+                                        beginEditingSubItem(at: index)
                                     }
-                                }
+                                )
                                 .subItemListRowStyle()
                                 // 标记子事项为完成
                                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
@@ -507,12 +699,37 @@ struct InputView: View {
                     }
                 }
                 .onDelete(perform: isReadOnly ? nil : deleteSubItem)
-                .onMove(perform: (isSubItemInputActive || isNewSubItemInputActive || isReadOnly) ? nil : moveSubItem)
+                .onMove(perform: (editingIndex != nil || isNewSubItemInputActive || isReadOnly) ? nil : moveSubItem)
             }
             .padding(.horizontal, 24)
             .listStyle(PlainListStyle())
+            .environment(\.defaultMinListRowHeight, 1)
             .modifier(HiddenListBackground())
             .background(Color.white)
+            .overlayPreferenceValue(TodoImageDeleteAnchorKey.self) { anchors in
+                GeometryReader { proxy in
+                    if !isReadOnly,
+                       let editingImageID,
+                       let anchor = anchors[editingImageID],
+                       let image = TodoImageStore.shared.images(for: item.id).first(where: { $0.id == editingImageID }) {
+                        let frame = proxy[anchor]
+                        Button {
+                            imagePendingDeletion = image
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundColor(Color.red)
+                                .background(Color.white, in: Circle())
+                                .frame(width: 32, height: 32)
+                                .contentShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .position(x: frame.maxX - 7, y: frame.minY + 7)
+                        .zIndex(10)
+                        .accessibilityLabel(Text("Delete image"))
+                    }
+                }
+            }
 
             bottomToolbar
         }
@@ -556,6 +773,11 @@ struct InputView: View {
         .onAppear {
             requestNotificationPermission()
         }
+        .onDisappear {
+            if editingIndex != nil {
+                saveSubItem()
+            }
+        }
         .listStyle(PlainListStyle())
         .onAppear {
             if item.subItems.isEmpty && !isReadOnly {
@@ -571,6 +793,53 @@ struct InputView: View {
             } else if let shareImage = shareImage {
                 ActivityViewController(activityItems: [shareImage])
             }
+        }
+        .sheet(isPresented: $showImageSourceDialog) {
+            if #available(iOS 16.4, *) {
+                ImageSourceSheet(
+                    onCamera: chooseCameraFromImageSheet,
+                    onLibrary: chooseLibraryFromImageSheet
+                )
+                .presentationDetents([.height(140)])
+                .presentationCornerRadius(30)
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color.white)
+            } else {
+                ImageSourceSheet(
+                    onCamera: chooseCameraFromImageSheet,
+                    onLibrary: chooseLibraryFromImageSheet
+                )
+                .presentationDetents([.height(140)])
+                .presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(isPresented: $showPhotoLibrary) {
+            TodoPhotoPicker(maximumSelectionCount: max(1, 20 - TodoImageStore.shared.images(for: item.id).count), onData: { data in
+                showPhotoLibrary = false
+                importSelectedPhotos(data)
+            }, onCancel: { showPhotoLibrary = false })
+        }
+        .sheet(isPresented: $showCamera) {
+            TodoCameraPicker(onImage: { image in
+                showCamera = false
+                importCameraImage(image)
+            }, onCancel: { showCamera = false })
+                .ignoresSafeArea()
+        }
+        .alert("Unable to add image", isPresented: Binding(get: { imageImportError != nil }, set: { if !$0 { imageImportError = nil } })) {
+            Button("OK", role: .cancel) { imageImportError = nil }
+        } message: {
+            Text(imageImportError?.localizedDescription ?? NSLocalizedString("Please try again.", comment: "Generic image import failure"))
+        }
+        .alert("Delete image?", isPresented: Binding(get: { imagePendingDeletion != nil }, set: { if !$0 { imagePendingDeletion = nil } })) {
+            Button("Delete", role: .destructive) {
+                if let image = imagePendingDeletion { TodoImageStore.shared.remove(image) }
+                imagePendingDeletion = nil
+                editingImageID = nil
+            }
+            Button("Cancel", role: .cancel) { imagePendingDeletion = nil }
+        } message: {
+            Text("This image will be permanently deleted from this item.")
         }
     }
     
@@ -645,6 +914,25 @@ struct ShareableView: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
             .padding(.bottom, 24)
+
+            let attachments = TodoImageStore.shared.images(for: item.id)
+            if !attachments.isEmpty {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 8) {
+                    ForEach(attachments) { attachment in
+                        if let image = TodoImageStore.shared.thumbnail(for: attachment) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .aspectRatio(1, contentMode: .fit)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
             
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(item.subItems.enumerated()), id: \.element.id) { index, subItem in
@@ -696,7 +984,7 @@ struct ShareableView: View {
         Rectangle()
             .fill(Color.black.opacity(0.05))
             .frame(height: 0.637)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
     }
 
     private func shareSubItemRow(_ subItem: TodoItem) -> some View {
@@ -739,7 +1027,7 @@ struct ShareableView: View {
         let completedDividerCount = zip(item.subItems, item.subItems.dropFirst()).filter { pair in
             !pair.0.isDone && pair.1.isDone
         }.count
-        let subItemsHeight = CGFloat(item.subItems.count) * subItemHeight + CGFloat(completedDividerCount) * (0.637 + 12)
+        let subItemsHeight = CGFloat(item.subItems.count) * subItemHeight + CGFloat(completedDividerCount) * (0.637 + 8)
         
         // Footer 区域高度
         let footerHeight: CGFloat = 20 + 12 + 10 + 20 // top padding + text height + bottom padding + bottom spacing

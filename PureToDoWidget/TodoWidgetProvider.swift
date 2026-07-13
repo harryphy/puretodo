@@ -45,6 +45,17 @@ struct TodoWidgetProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodoEntry>) -> Void) {
         // 从共享数据存储中加载 pinnedTodoItems 和 todoItems
         let userDefaults = UserDefaults(suiteName: "group.com.Harry.P.Pure-To-Do")
+        if let widgetItemsData = userDefaults?.data(forKey: "widgetTodoItems"),
+           let widgetItems = try? JSONDecoder().decode([TodoItem].self, from: widgetItemsData) {
+            let widgetCount = userDefaults?.object(forKey: "widgetTodoCount") == nil
+                ? widgetItems.count
+                : userDefaults?.integer(forKey: "widgetTodoCount") ?? widgetItems.count
+            let entry = TodoEntry(date: Date(), items: widgetItems, totalItemCount: widgetCount)
+            let timeline = Timeline(entries: [entry], policy: .atEnd)
+            completion(timeline)
+            return
+        }
+
         var pinnedItems: [TodoItem] = []
         var otherItems: [TodoItem] = []
         var categories: [Category] = []
@@ -53,12 +64,12 @@ struct TodoWidgetProvider: TimelineProvider {
            let decodedPinnedItems = try? JSONDecoder().decode([TodoItem].self, from: pinnedData) {
             pinnedItems = decodedPinnedItems
         }
-        
+
         if let itemsData = userDefaults?.data(forKey: "todoItems"),
            let decodedItems = try? JSONDecoder().decode([TodoItem].self, from: itemsData) {
             otherItems = decodedItems
         }
-        
+
         // 加载分类数据
         if let categoriesData = userDefaults?.data(forKey: "categories"),
            let decodedCategories = try? JSONDecoder().decode([Category].self, from: categoriesData) {
@@ -67,7 +78,7 @@ struct TodoWidgetProvider: TimelineProvider {
 
         // 找到"To Do"分类的ID
         let toDoCategoryId = categories.first(where: { $0.name == "To Do" })?.id
-        
+
         // 只显示"To Do"分类的事项（包括没有分类ID的旧数据）
         let filteredPinnedItems = pinnedItems.filter { item in
             if let toDoCategoryId = toDoCategoryId {
@@ -76,7 +87,7 @@ struct TodoWidgetProvider: TimelineProvider {
                 return item.categoryId == nil
             }
         }
-        
+
         let filteredOtherItems = otherItems.filter { item in
             if let toDoCategoryId = toDoCategoryId {
                 return item.categoryId == toDoCategoryId || item.categoryId == nil

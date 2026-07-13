@@ -10,6 +10,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow access to the camera to add photos to your to-do items.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allow access to photos to add images to your to-do items.</string>
 	<key>SKAdNetworkItems</key>
 	<array/>
 </dict>

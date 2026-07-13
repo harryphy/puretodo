@@ -19,6 +19,8 @@ struct Pull_to_doApp: App {
                 .preferredColorScheme(.light)
                 .onAppear {
                     requestNotificationPermission()
+                    TodoImageStore.shared.purgeExpiredOriginals(doneItems: DataStore.shared.loadDoneItems())
+                    TodoImageStore.shared.synchronize()
                 }
         }
     }

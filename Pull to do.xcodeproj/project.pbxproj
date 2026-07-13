@@ -12,6 +12,7 @@
 		3D467FEB2CE6B8D3002B01CD /* StoreKitConfig.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3D467FE82CE6B8D3002B01CD /* StoreKitConfig.storekit */; };
 		3D467FEC2CE6B8D3002B01CD /* StoreKitConfig.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3D467FE82CE6B8D3002B01CD /* StoreKitConfig.storekit */; };
 		3D605EB52B53CAA9007C7463 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 3D605EB42B53CAA9007C7463 /* Localizable.xcstrings */; };
+		3DF1A0032F00000100000001 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 3DF1A0042F00000100000001 /* InfoPlist.xcstrings */; };
 		3D68314C2B23075700F09244 /* Pull_to_doApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D68314B2B23075700F09244 /* Pull_to_doApp.swift */; };
 		3D68314E2B23075700F09244 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D68314D2B23075700F09244 /* ContentView.swift */; };
 		3D6831502B23075800F09244 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3D68314F2B23075800F09244 /* Assets.xcassets */; };
@@ -23,6 +24,7 @@
 		3D7EB8302B49AE7200AC6378 /* SwiftUI-Refresher-1.1.7.zip in Resources */ = {isa = PBXBuildFile; fileRef = 3D7EB82F2B49AE7200AC6378 /* SwiftUI-Refresher-1.1.7.zip */; };
 		3D8284032CBA531B004890EE /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8284022CBA5309004890EE /* PurchaseManager.swift */; };
 		3D8422652E5B5A9000961373 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8422602E5B5A8F00961373 /* Helpers.swift */; };
+		3DF1A0012F00000100000001 /* TodoImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DF1A0022F00000100000001 /* TodoImageStore.swift */; };
 		3D9EA9832E5B6770007FB101 /* InputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D9EA9822E5B6760007FB101 /* InputView.swift */; };
 		3D9EA9852E5B67BF007FB101 /* DataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D9EA9842E5B67B9007FB101 /* DataStore.swift */; };
 		3D9EA9872E5B67FF007FB101 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D9EA9862E5B67FC007FB101 /* Models.swift */; };
@@ -83,6 +85,7 @@
 		3D22BD6E2C5938B40036B1C7 /* PureToDoWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PureToDoWidgetExtension.entitlements; sourceTree = "<group>"; };
 		3D467FE82CE6B8D3002B01CD /* StoreKitConfig.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = StoreKitConfig.storekit; sourceTree = "<group>"; };
 		3D605EB42B53CAA9007C7463 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		3DF1A0042F00000100000001 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		3D6831482B23075700F09244 /* Pull to do.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Pull to do.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D68314B2B23075700F09244 /* Pull_to_doApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pull_to_doApp.swift; sourceTree = "<group>"; };
 		3D68314D2B23075700F09244 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -97,6 +100,7 @@
 		3D7EB82F2B49AE7200AC6378 /* SwiftUI-Refresher-1.1.7.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "SwiftUI-Refresher-1.1.7.zip"; sourceTree = "<group>"; };
 		3D8284022CBA5309004890EE /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
 		3D8422602E5B5A8F00961373 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
+		3DF1A0022F00000100000001 /* TodoImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoImageStore.swift; sourceTree = "<group>"; };
 		3D9EA9822E5B6760007FB101 /* InputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputView.swift; sourceTree = "<group>"; };
 		3D9EA9842E5B67B9007FB101 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
 		3D9EA9862E5B67FC007FB101 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -193,11 +197,13 @@
 				3D9EA9822E5B6760007FB101 /* InputView.swift */,
 				3D8284022CBA5309004890EE /* PurchaseManager.swift */,
 				3D8422602E5B5A8F00961373 /* Helpers.swift */,
+				3DF1A0022F00000100000001 /* TodoImageStore.swift */,
 				3DA418792BCD4D8800523045 /* Pull to do.entitlements */,
 				3D68314B2B23075700F09244 /* Pull_to_doApp.swift */,
 				3D68314D2B23075700F09244 /* ContentView.swift */,
 				3D68314F2B23075800F09244 /* Assets.xcassets */,
 				3D605EB42B53CAA9007C7463 /* Localizable.xcstrings */,
+				3DF1A0042F00000100000001 /* InfoPlist.xcstrings */,
 				3D6831512B23075800F09244 /* Preview Content */,
 				3DB22E362C3CC51400F31225 /* AppDelegate.swift */,
 				3DF0B24D2C6455BB004DB1CA /* Info.plist */,
@@ -391,6 +397,7 @@
 				3D467FE92CE6B8D3002B01CD /* StoreKitConfig.storekit in Resources */,
 				3D7EB8302B49AE7200AC6378 /* SwiftUI-Refresher-1.1.7.zip in Resources */,
 				3D605EB52B53CAA9007C7463 /* Localizable.xcstrings in Resources */,
+				3DF1A0032F00000100000001 /* InfoPlist.xcstrings in Resources */,
 				3D6831502B23075800F09244 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -437,6 +444,7 @@
 				3D68314C2B23075700F09244 /* Pull_to_doApp.swift in Sources */,
 				3D9EA98B2E5B6887007FB101 /* Views.swift in Sources */,
 				3D8422652E5B5A9000961373 /* Helpers.swift in Sources */,
+				3DF1A0012F00000100000001 /* TodoImageStore.swift in Sources */,
 				3D9EA9832E5B6770007FB101 /* InputView.swift in Sources */,
 				3D8284032CBA531B004890EE /* PurchaseManager.swift in Sources */,
 			);
@@ -618,13 +626,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Pull to do/Pull to do.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-					CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_ASSET_PATHS = "\"Pull to do/Preview Content\"";
 				DEVELOPMENT_TEAM = F7QMPCXXRZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Pure To Do";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Allow access to the camera to add photos to your to-do items.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow access to photos to add images to your to-do items.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -635,7 +645,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.4;
+				MARKETING_VERSION = 3.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Harry.P.Pure-To-Do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -653,13 +663,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Pull to do/Pull to do.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-					CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_ASSET_PATHS = "\"Pull to do/Preview Content\"";
 				DEVELOPMENT_TEAM = F7QMPCXXRZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Pure To Do";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Allow access to the camera to add photos to your to-do items.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow access to photos to add images to your to-do items.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -670,7 +682,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.4;
+				MARKETING_VERSION = 3.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Harry.P.Pure-To-Do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -723,7 +735,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-					CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = F7QMPCXXRZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
@@ -740,7 +752,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-					CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = F7QMPCXXRZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
@@ -760,7 +772,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = PureToDoWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = F7QMPCXXRZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PureToDoWidget/Info.plist;
@@ -772,7 +784,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.4;
+				MARKETING_VERSION = 3.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Harry.P.Pure-To-Do.widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -789,7 +801,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = PureToDoWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = F7QMPCXXRZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PureToDoWidget/Info.plist;
@@ -801,7 +813,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.4;
+				MARKETING_VERSION = 3.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Harry.P.Pure-To-Do.widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

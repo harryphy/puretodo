@@ -286,6 +286,10 @@ struct DonePage: View {
     @State private var showDetailView = false
     @State private var selectedDetailItem: TodoItem?
     @Environment(\.presentationMode) var presentationMode // 用于关闭视图
+    @ObservedObject private var imageStore = TodoImageStore.shared
+    private let backSwipeEdgeWidth: CGFloat = 44
+    private let backSwipeMinimumDistance: CGFloat = 52
+    private let backSwipeMaximumVerticalDrift: CGFloat = 28
 
     private var groupedItems: [Date: [TodoItem]] {
         Dictionary(grouping: doneItems) { item in
@@ -380,6 +384,13 @@ struct DonePage: View {
                                         .foregroundColor(Color.black.opacity(0.8))
                                         .fontWeight(.regular)
                                     Spacer()  // 添加一个Spacer来填满整行
+                                    if imageStore.hasImages(for: item.id) {
+                                        Image("imageIcon")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 14, height: 14)
+                                            .foregroundColor(Color.black.opacity(0.25))
+                                    }
                                     if item.subItems.count > 0 {
                                         Text("\(item.subItems.count)")
                                             .foregroundColor(Color.black.opacity(0.25))
@@ -441,12 +452,16 @@ struct DonePage: View {
             HStack(spacing: 0) {
                 Rectangle()
                     .fill(Color.clear)
-                    .frame(width: 25)
+                    .frame(width: backSwipeEdgeWidth)
                     .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                if value.translation.width > 5 {
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 12)
+                            .onEnded { value in
+                                let isHorizontalSwipe = value.translation.width > abs(value.translation.height)
+                                let hasEnoughDistance = value.translation.width > backSwipeMinimumDistance
+                                let staysNearHorizontal = abs(value.translation.height) < backSwipeMaximumVerticalDrift
+
+                                if isHorizontalSwipe && hasEnoughDistance && staysNearHorizontal {
                                     presentationMode.wrappedValue.dismiss()
                                 }
                             }
@@ -520,6 +535,7 @@ struct DonePage: View {
     private func deleteDoneItem(_ item: TodoItem, on date: Date) {
         // 取消与此事项相关的所有通知
         NotificationHelper.cancelReminder(for: item)
+        TodoImageStore.shared.removeAllImages(for: item.id)
         
         doneItems.removeAll { $0.id == item.id }
         saveData()  // 确保变更保存到 UserDefaults
@@ -534,6 +550,7 @@ struct DonePage: View {
                 if let item = doneItems.first(where: { $0.id == id }) {
                     NotificationHelper.cancelReminder(for: item)
                 }
+                TodoImageStore.shared.removeAllImages(for: id)
             }
             doneItems.removeAll { idsToDelete.contains($0.id) }
             saveData()  // 确保变更保存到 UserDefaults

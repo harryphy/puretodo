@@ -94,7 +94,7 @@ struct SimpleEdgePanGesture: UIViewRepresentable {
 private struct PullToCreateObserver: UIViewRepresentable {
     let threshold: CGFloat
     let onPull: (CGFloat, Bool) -> Void
-    let onScroll: (CGFloat) -> Void
+    let onScroll: (CGFloat, Bool, CGFloat) -> Void
     let onScrollRangeChange: (CGFloat) -> Void
     let onTrigger: () -> Void
 
@@ -124,7 +124,7 @@ private struct PullToCreateObserver: UIViewRepresentable {
     final class Coordinator: NSObject {
         var threshold: CGFloat
         var onPull: (CGFloat, Bool) -> Void
-        var onScroll: (CGFloat) -> Void
+        var onScroll: (CGFloat, Bool, CGFloat) -> Void
         var onScrollRangeChange: (CGFloat) -> Void
         var onTrigger: () -> Void
 
@@ -135,7 +135,7 @@ private struct PullToCreateObserver: UIViewRepresentable {
         private var isTrackingTopPull = false
         private var thresholdFeedbackGenerator: UIImpactFeedbackGenerator?
 
-        init(threshold: CGFloat, onPull: @escaping (CGFloat, Bool) -> Void, onScroll: @escaping (CGFloat) -> Void, onScrollRangeChange: @escaping (CGFloat) -> Void, onTrigger: @escaping () -> Void) {
+        init(threshold: CGFloat, onPull: @escaping (CGFloat, Bool) -> Void, onScroll: @escaping (CGFloat, Bool, CGFloat) -> Void, onScrollRangeChange: @escaping (CGFloat) -> Void, onTrigger: @escaping () -> Void) {
             self.threshold = threshold
             self.onPull = onPull
             self.onScroll = onScroll
@@ -206,9 +206,9 @@ private struct PullToCreateObserver: UIViewRepresentable {
                 if abs(scrollView.contentOffset.y - pinnedTopOffset) > 0.5 {
                     scrollView.setContentOffset(CGPoint(x: scrollView.contentOffset.x, y: pinnedTopOffset), animated: false)
                 }
-                onScroll(0)
+                onScroll(0, isDragging, translation.y)
             } else {
-                onScroll(canCollapseHeader ? min(max(0, normalizedOffset), maxScrollableOffset) : 0)
+                onScroll(canCollapseHeader ? min(max(0, normalizedOffset), maxScrollableOffset) : 0, isDragging, translation.y)
             }
 
             guard pullDistance > 0 || !isHorizontalSwipe else { return }
@@ -263,14 +263,6 @@ private struct HiddenScrollContentBackground: ViewModifier {
         } else {
             content
         }
-    }
-}
-
-private struct MainListContentHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value += nextValue()
     }
 }
 
@@ -412,12 +404,14 @@ struct TodoItemRowView: View {
     let item: TodoItem
     let isPinned: Bool
     let selectedItemId: UUID?
+    let suppressSwipeActions: Bool
     let onTap: () -> Void
     let onDelete: () -> Void
     let onMarkDone: () -> Void
     let onPin: () -> Void
     let onUnpin: () -> Void
     let onMoveToCategory: () -> Void
+    @ObservedObject private var imageStore = TodoImageStore.shared
 
     private var activeSubItemCount: Int {
         item.subItems.filter { !$0.isDone }.count
@@ -426,25 +420,46 @@ struct TodoItemRowView: View {
     private let titleToCountSpacing: CGFloat = 28
     private let subItemCountColumnWidth: CGFloat = 32
 
-    var body: some View {
+    private var rowContent: some View {
         HStack(alignment: .top, spacing: titleToCountSpacing) {
-            VStack(alignment: .leading, spacing: item.reminderType == nil ? 0 : 6) {
+            VStack(alignment: .leading, spacing: (item.reminderType == nil && !imageStore.hasImages(for: item.id)) ? 0 : 6) {
                 Text(item.title)
                     .font(.system(size: 18, weight: isPinned ? .medium : (selectedItemId == item.id ? .bold : .regular)))
                     .foregroundColor(Color(hex: "2A2A2A"))
                     .lineSpacing(2)
                     .opacity(selectedItemId == item.id ? 0.6 : 1.0)
                     .fixedSize(horizontal: false, vertical: true)
-                ReminderInfoView(item: item)
+
+                if item.reminderType != nil || imageStore.hasImages(for: item.id) {
+                    HStack(spacing: 8) {
+                        if imageStore.hasImages(for: item.id) {
+                            Image("imageIcon")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(Color(hex: "C0C0C0"))
+                                .accessibilityLabel("Has images")
+
+                            if item.reminderType != nil {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.08))
+                                    .frame(width: 1, height: 12)
+                            }
+                        }
+                        ReminderInfoView(item: item)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(activeSubItemCount > 0 ? "\(activeSubItemCount)" : " ")
-                .foregroundColor(Color(hex: "C0C0C0"))
-                .font(.system(size: 18, weight: .light))
-                .frame(width: subItemCountColumnWidth, alignment: .trailing)
-                .opacity(activeSubItemCount > 0 ? 1 : 0)
-                .accessibilityHidden(activeSubItemCount == 0)
+            if activeSubItemCount > 0 {
+                Text("\(activeSubItemCount)")
+                    .foregroundColor(Color(hex: "C0C0C0"))
+                    .font(.system(size: 18, weight: .light))
+                    .frame(width: subItemCountColumnWidth + 22, alignment: .trailing)
+            } else {
+                Color.clear.frame(width: subItemCountColumnWidth + 22)
+            }
         }
         .padding(.vertical, 18)
         .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 0, trailing: 28))
@@ -453,63 +468,71 @@ struct TodoItemRowView: View {
             onTap()
         }
         .listRowBackground(Color(hex: "FAFAFA"))
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
-                let generator = UIImpactFeedbackGenerator(style: .medium)
-                generator.impactOccurred()
-                onDelete()
-            } label: {
-                Label("", systemImage: "trash.fill")
-            }
-            .tint(Color(hex: "F55447"))
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button {
-                // 第一次振动：重
-                let heavyGenerator = UIImpactFeedbackGenerator(style: .heavy)
-                heavyGenerator.impactOccurred()
+    }
 
-                // 0.2秒后第二次振动：轻
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    let lightGenerator = UIImpactFeedbackGenerator(style: .light)
-                    lightGenerator.impactOccurred()
+    var body: some View {
+        if suppressSwipeActions {
+            rowContent
+        } else {
+            rowContent
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        let generator = UIImpactFeedbackGenerator(style: .medium)
+                        generator.impactOccurred()
+                        onDelete()
+                    } label: {
+                        Label("", systemImage: "trash.fill")
+                    }
+                    .tint(Color(hex: "F55447"))
                 }
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button {
+                        // 第一次振动：重
+                        let heavyGenerator = UIImpactFeedbackGenerator(style: .heavy)
+                        heavyGenerator.impactOccurred()
 
-                onMarkDone()
-            } label: {
-                Image("purecheck")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 18, height: 18)
-            }
-            .tint(Color(hex: "3BBF5E"))
-            if isPinned {
-                Button {
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                    onUnpin()
-                } label: {
-                    Label("", systemImage: "pin.slash.fill")
+                        // 0.2秒后第二次振动：轻
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            let lightGenerator = UIImpactFeedbackGenerator(style: .light)
+                            lightGenerator.impactOccurred()
+                        }
+
+                        onMarkDone()
+                    } label: {
+                        Image("purecheck")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 18, height: 18)
+                    }
+                    .tint(Color(hex: "3BBF5E"))
+                    if isPinned {
+                        Button {
+                            let generator = UIImpactFeedbackGenerator(style: .light)
+                            generator.impactOccurred()
+                            onUnpin()
+                        } label: {
+                            Label("", systemImage: "pin.slash.fill")
+                        }
+                        .tint(Color(hex: "F8B600"))
+                    } else {
+                        Button {
+                            let generator = UIImpactFeedbackGenerator(style: .light)
+                            generator.impactOccurred()
+                            onPin()
+                        } label: {
+                            Label("", systemImage: "pin.fill")
+                        }
+                        .tint(Color(hex: "F8B600"))
+                    }
+                    Button {
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
+                        onMoveToCategory()
+                    } label: {
+                        Label("", systemImage: "arrowshape.turn.up.right.fill")
+                    }
+                    .tint(Color(hex: "F78D41"))
                 }
-                .tint(Color(hex: "F8B600"))
-            } else {
-                Button {
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                    onPin()
-                } label: {
-                    Label("", systemImage: "pin.fill")
-                }
-                .tint(Color(hex: "F8B600"))
-            }
-            Button {
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
-                onMoveToCategory()
-            } label: {
-                Label("", systemImage: "arrowshape.turn.up.right.fill")
-            }
-            .tint(Color(hex: "F78D41"))
         }
     }
 }
@@ -610,13 +633,11 @@ struct ContentView: View {
     @State private var pinnedItemPosition: CGFloat = 0
     @State private var firstItemPosition: CGFloat = 0
     @State private var pullToCreateDistance: CGFloat = 0
-    @State private var listScrollOffset: CGFloat = 0
     @State private var isHeaderCollapsed = false
     @State private var isHandlingPullToCreate = false
+    @State private var pinClosingActionItemIds: Set<UUID> = []
     @State private var pinFadingOutItemIds: Set<UUID> = []
     @State private var pinFadingInItemIds: Set<UUID> = []
-    @State private var mainListContentHeight: CGFloat = 0
-    @State private var mainListViewportHeight: CGFloat = 0
     @State private var showDonePage = false
     @State private var showPurchaseSheet = false
     @State private var featuresUnlockedObserver: NSObjectProtocol?
@@ -627,13 +648,17 @@ struct ContentView: View {
     @State private var itemToMove: TodoItem? // 要移动的事项
 
     private let pullToCreateThreshold: CGFloat = 48
-    private let completedItemsBottomLinkHeight: CGFloat = 69
+    private let completedItemsBottomLinkHeight: CGFloat = 46
+    private let completedItemsBottomPadding: CGFloat = 13
+    private let pinActionCloseDelay: TimeInterval = 0.14
+    private let pinPositionFadeDuration: TimeInterval = 0.12
+    private let pinTargetSettleDelay: TimeInterval = 0.04
     private let mainBackgroundColor = Color(hex: "FAFAFA")
-
-    private var shouldPinCompletedItemsLink: Bool {
-        guard mainListViewportHeight > 0 else { return true }
-        return mainListContentHeight + completedItemsBottomLinkHeight <= mainListViewportHeight
-    }
+    private static let appGroupIdentifier = "group.com.Harry.P.Pure-To-Do"
+    private static let defaultOnboardingSeededKey = "DefaultOnboardingItemsSeeded"
+    private static let legacyLaunchKey = "HasLaunchedOnce"
+    private static let legacyMigrationKey = "migrationCompleted"
+    private static let todoStorageKeys = ["todoItems", "doneTodoItems", "pinnedTodoItems"]
 
     private var headerCollapseProgress: CGFloat {
         isHeaderCollapsed ? 1 : 0
@@ -728,6 +753,7 @@ struct ContentView: View {
     init() {
         let storedItems = DataStore.shared.loadItems()
         let storedDoneItems = DataStore.shared.loadDoneItems()
+        let storedPinnedItems = DataStore.shared.loadPinnedItems()
         let storedCategories = DataStore.shared.loadCategories()
 
         // 确保有默认分类
@@ -741,31 +767,91 @@ struct ContentView: View {
         // 设置默认选中的分类
         let defaultCategory = categories.first!
 
-        if ContentView.isFirstLaunch() {
+        if ContentView.shouldSeedDefaultOnboardingItems(
+            storedItems: storedItems,
+            storedDoneItems: storedDoneItems,
+            storedPinnedItems: storedPinnedItems
+        ) {
             let defaultItems = [
                 TodoItem(title: NSLocalizedString("↓ Pull to add", comment: "Create new item"), isDone: false, date: Date(), categoryId: defaultCategory.id),
                 TodoItem(title: NSLocalizedString("→ Swipe an item right to mark done", comment: "Mark as done"), isDone: false, date: Date(), categoryId: defaultCategory.id),
                 TodoItem(title: NSLocalizedString("← Swipe an item left to delete", comment: "Delete"), isDone: false, date: Date(), categoryId: defaultCategory.id)
             ]
-            _items = State(initialValue: defaultItems + storedItems)
+            let initialItems = defaultItems + storedItems
+            _items = State(initialValue: initialItems)
             _doneItems = State(initialValue: storedDoneItems)
+            _pinnedItems = State(initialValue: storedPinnedItems)
+            DataStore.shared.saveItems(initialItems, storedDoneItems, storedPinnedItems)
         } else {
             _items = State(initialValue: storedItems)
             _doneItems = State(initialValue: storedDoneItems)
+            _pinnedItems = State(initialValue: storedPinnedItems)
         }
 
         _categories = State(initialValue: categories)
         _selectedCategory = State(initialValue: defaultCategory)
     }
 
-    private static func isFirstLaunch() -> Bool {
+    private static func shouldSeedDefaultOnboardingItems(
+        storedItems: [TodoItem],
+        storedDoneItems: [TodoItem],
+        storedPinnedItems: [TodoItem]
+    ) -> Bool {
+        let hasLoadedTodoHistory = !storedItems.isEmpty || !storedDoneItems.isEmpty || !storedPinnedItems.isEmpty
+        let hasPersistedTodoHistory = hasAnyTodoStorageRecord()
+        let hasHandledOnboarding = hasOnboardingHandledMarker()
+        let hasLegacyLaunchHistory = hasLegacyLaunchMarker()
+        let hasLegacyMigrationHistory = UserDefaults.standard.bool(forKey: legacyMigrationKey)
+
+        markDefaultOnboardingAsHandled()
+
+        return !hasLoadedTodoHistory
+            && !hasPersistedTodoHistory
+            && !hasHandledOnboarding
+            && !hasLegacyLaunchHistory
+            && !hasLegacyMigrationHistory
+    }
+
+    private static func hasOnboardingHandledMarker() -> Bool {
         let keyValueStore = NSUbiquitousKeyValueStore.default
-        let hasLaunchedOnce = keyValueStore.bool(forKey: "HasLaunchedOnce")
-        if !hasLaunchedOnce {
-            keyValueStore.set(true, forKey: "HasLaunchedOnce")
-            keyValueStore.synchronize()
+        let standardDefaults = UserDefaults.standard
+        let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier)
+
+        return standardDefaults.bool(forKey: defaultOnboardingSeededKey)
+            || (sharedDefaults?.bool(forKey: defaultOnboardingSeededKey) ?? false)
+            || keyValueStore.bool(forKey: defaultOnboardingSeededKey)
+    }
+
+    private static func hasLegacyLaunchMarker() -> Bool {
+        let keyValueStore = NSUbiquitousKeyValueStore.default
+        return keyValueStore.bool(forKey: legacyLaunchKey)
+    }
+
+    private static func hasAnyTodoStorageRecord() -> Bool {
+        let keyValueStore = NSUbiquitousKeyValueStore.default
+        let standardDefaults = UserDefaults.standard
+        let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier)
+
+        return todoStorageKeys.contains { key in
+            standardDefaults.data(forKey: key) != nil
+                || sharedDefaults?.data(forKey: key) != nil
+                || keyValueStore.data(forKey: key) != nil
         }
-        return !hasLaunchedOnce
+    }
+
+    private static func markDefaultOnboardingAsHandled() {
+        let keyValueStore = NSUbiquitousKeyValueStore.default
+        let standardDefaults = UserDefaults.standard
+        let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier)
+
+        standardDefaults.set(true, forKey: defaultOnboardingSeededKey)
+        sharedDefaults?.set(true, forKey: defaultOnboardingSeededKey)
+        keyValueStore.set(true, forKey: defaultOnboardingSeededKey)
+        keyValueStore.set(true, forKey: legacyLaunchKey)
+
+        standardDefaults.synchronize()
+        sharedDefaults?.synchronize()
+        keyValueStore.synchronize()
     }
 
     private var addButtonView: some View {
@@ -869,7 +955,7 @@ struct ContentView: View {
                                 Spacer(minLength: 0)
                                 completedItemsPlainLink
                                     .padding(.horizontal, 28)
-                                    .padding(.bottom, 24)
+                                    .padding(.bottom, completedItemsBottomPadding)
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: geometry.size.height)
@@ -883,9 +969,8 @@ struct ContentView: View {
             }
         } else {
             pullToCreateContainer {
-                GeometryReader { geometry in
-                    ZStack(alignment: .bottom) {
-                        List {
+                ZStack(alignment: .bottom) {
+                    List {
                         // 置顶事项部分
                         if !currentCategoryPinnedItems.isEmpty {
                             ForEach(currentCategoryPinnedItems, id: \.id) { pinnedItem in
@@ -893,6 +978,7 @@ struct ContentView: View {
                                     item: pinnedItem,
                                     isPinned: true,
                                     selectedItemId: selectedPinnedItemId,
+                                    suppressSwipeActions: isPinTransitioning(pinnedItem.id),
                                     onTap: {
                                         self.selectedPinnedItemId = pinnedItem.id
                                         self.editingItem = pinnedItem
@@ -917,20 +1003,19 @@ struct ContentView: View {
                                     onUnpin: {
                                         transitionPinState(for: pinnedItem, pin: false)
                                     },
-                                onMoveToCategory: {
-                                    showCategorySelector(for: pinnedItem)
-                                }
-                            )
-                            .opacity(pinTransitionOpacity(for: pinnedItem.id))
-                            .animation(.easeInOut(duration: 0.24), value: pinFadingOutItemIds)
-                            .animation(.easeInOut(duration: 0.24), value: pinFadingInItemIds)
-                        }
+                                    onMoveToCategory: {
+                                        showCategorySelector(for: pinnedItem)
+                                    }
+                                )
+                                .opacity(pinTransitionOpacity(for: pinnedItem.id))
+                                .animation(.easeInOut(duration: pinPositionFadeDuration), value: pinTransitionOpacity(for: pinnedItem.id))
+                            }
                             .onMove(perform: movePinnedItem)
                             .listRowSeparator(.hidden)
                         }
 
                         // 分割线
-                            if !currentCategoryItems.isEmpty && !currentCategoryPinnedItems.isEmpty {
+                        if !currentCategoryItems.isEmpty && !currentCategoryPinnedItems.isEmpty {
                             VStack(spacing: 0) {
                                 Spacer().frame(height: 24)
                                 MainSectionDivider()
@@ -946,6 +1031,7 @@ struct ContentView: View {
                                 item: item,
                                 isPinned: false,
                                 selectedItemId: selectedItemId,
+                                suppressSwipeActions: isPinTransitioning(item.id),
                                 onTap: {
                                     self.selectedItemId = item.id
                                     self.editingItem = item
@@ -975,8 +1061,7 @@ struct ContentView: View {
                                 }
                             )
                             .opacity(pinTransitionOpacity(for: item.id))
-                            .animation(.easeInOut(duration: 0.24), value: pinFadingOutItemIds)
-                            .animation(.easeInOut(duration: 0.24), value: pinFadingInItemIds)
+                            .animation(.easeInOut(duration: pinPositionFadeDuration), value: pinTransitionOpacity(for: item.id))
                         }
                         .onMove(perform: move)
                         .onDelete { offsets in
@@ -986,40 +1071,19 @@ struct ContentView: View {
                         }
                         .listRowSeparator(.hidden)
 
-                        if !shouldPinCompletedItemsLink {
-                            completedItemsListRow
-                        }
+                        completedItemsBottomSpacerRow
                     }
                     .listStyle(PlainListStyle())
                     .listRowSpacing(0)
                     .environment(\.defaultMinListRowHeight, 1)
                     .modifier(HiddenScrollContentBackground())
-                        .background(mainBackgroundColor)
+                    .background(mainBackgroundColor)
 
-                        if shouldPinCompletedItemsLink {
-                            completedItemsPlainLink
-                                .padding(.horizontal, 28)
-                                .padding(.bottom, 24)
-                                .background(mainBackgroundColor)
-                        }
-                    }
-                    .background(alignment: .top) {
-                        mainListContentMeasurement
-                            .frame(width: geometry.size.width, alignment: .top)
-                            .opacity(0)
-                            .allowsHitTesting(false)
-                    }
-                    .onPreferenceChange(MainListContentHeightKey.self) { height in
-                        if abs(mainListContentHeight - height) > 0.5 {
-                            mainListContentHeight = height
-                        }
-                    }
-                    .onAppear {
-                        mainListViewportHeight = geometry.size.height
-                    }
-                    .onChange(of: geometry.size.height) { newHeight in
-                        mainListViewportHeight = newHeight
-                    }
+                    completedItemsPlainLink
+                        .padding(.horizontal, 28)
+                        .padding(.bottom, completedItemsBottomPadding)
+                        .frame(height: completedItemsBottomLinkHeight, alignment: .bottom)
+                        .background(mainBackgroundColor)
                 }
                 .sheet(isPresented: $showRating) {
                     if #available(iOS 16.4, *) {
@@ -1051,10 +1115,10 @@ struct ContentView: View {
                             }
                         }
                     },
-                    onScroll: { offset in
-                        listScrollOffset = offset
+                    onScroll: { offset, isDragging, translationY in
+                        let isActivelyPullingDownAtTop = isDragging && translationY > 0 && offset <= 1
 
-                        if offset <= 1 && isHeaderCollapsed {
+                        if isActivelyPullingDownAtTop && isHeaderCollapsed {
                             withAnimation(.easeInOut(duration: 0.28)) {
                                 isHeaderCollapsed = false
                             }
@@ -1072,53 +1136,6 @@ struct ContentView: View {
             )
     }
 
-    private var mainListContentMeasurement: some View {
-        VStack(spacing: 0) {
-            ForEach(currentCategoryPinnedItems, id: \.id) { item in
-                measuredTodoItemRow(item, isPinned: true)
-            }
-
-            if !currentCategoryItems.isEmpty && !currentCategoryPinnedItems.isEmpty {
-                VStack(spacing: 0) {
-                    Spacer().frame(height: 24)
-                    MainSectionDivider()
-                }
-                .padding(.horizontal, 28)
-            }
-
-            ForEach(currentCategoryItems.filter { !$0.isDone }, id: \.id) { item in
-                measuredTodoItemRow(item, isPinned: false)
-            }
-        }
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(key: MainListContentHeightKey.self, value: proxy.size.height)
-            }
-        )
-    }
-
-    private func measuredTodoItemRow(_ item: TodoItem, isPinned: Bool) -> some View {
-        let activeSubItemCount = item.subItems.filter { !$0.isDone }.count
-
-        return HStack(alignment: .top, spacing: 28) {
-            VStack(alignment: .leading, spacing: item.reminderType == nil ? 0 : 6) {
-                Text(item.title)
-                    .font(.system(size: 18, weight: isPinned ? .medium : .regular))
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                ReminderInfoView(item: item)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text(activeSubItemCount > 0 ? "\(activeSubItemCount)" : " ")
-                .font(.system(size: 18, weight: .light))
-                .frame(width: 32, alignment: .trailing)
-        }
-        .padding(.horizontal, 28)
-        .padding(.vertical, 18)
-    }
-
     // 导航栏右侧按钮
     @ViewBuilder
     private var navigationBarTrailingButton: some View {
@@ -1131,27 +1148,28 @@ struct ContentView: View {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.primary)
-                        .frame(width: 28, height: 28)
                         .rotationEffect(.degrees(90))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .flatButtonStyle()
-                .frame(width: 28, height: 28, alignment: .center)
+                .frame(width: 44, height: 44, alignment: .center)
             }
         }
-        .frame(height: headerTitleSize, alignment: .center)
-    }
-
-    private var completedItemsListRow: some View {
-        completedItemsNavigationLink
-            .padding(.top, 24)
-            .padding(.bottom, 24)
-            .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 0, trailing: 28))
-            .listRowSeparator(.hidden)
-            .listRowBackground(mainBackgroundColor)
+        .frame(height: max(headerTitleSize, 44), alignment: .center)
     }
 
     private var completedItemsPlainLink: some View {
         completedItemsNavigationLink
+    }
+
+    private var completedItemsBottomSpacerRow: some View {
+        Color.clear
+            .frame(height: completedItemsBottomLinkHeight)
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(mainBackgroundColor)
+            .accessibilityHidden(true)
     }
 
     private var completedItemsNavigationLink: some View {
@@ -1793,6 +1811,7 @@ struct ContentView: View {
         for item in pinnedItemsToDelete {
             NotificationHelper.cancelReminder(for: item)
         }
+        (itemsToDelete + pinnedItemsToDelete).forEach { TodoImageStore.shared.removeAllImages(for: $0.id) }
 
         // 删除该分类下的所有未完成事项
         items.removeAll { $0.categoryId == selectedCategory.id }
@@ -1905,6 +1924,7 @@ struct ContentView: View {
         NotificationHelper.cancelReminder(for: item)
 
         if let index = items.firstIndex(where: { $0.id == item.id }) {
+            TodoImageStore.shared.removeAllImages(for: item.id)
             items.remove(at: index)
             saveData()
         }
@@ -1915,6 +1935,7 @@ struct ContentView: View {
         NotificationHelper.cancelReminder(for: item)
 
         if let index = pinnedItems.firstIndex(where: { $0.id == item.id }) {
+            TodoImageStore.shared.removeAllImages(for: item.id)
             pinnedItems.remove(at: index)
             saveData()
         }
@@ -1942,31 +1963,51 @@ struct ContentView: View {
         (pinFadingOutItemIds.contains(id) || pinFadingInItemIds.contains(id)) ? 0 : 1
     }
 
-    private func transitionPinState(for item: TodoItem, pin: Bool) {
-        guard !pinFadingOutItemIds.contains(item.id), !pinFadingInItemIds.contains(item.id) else { return }
+    private func isPinTransitioning(_ id: UUID) -> Bool {
+        pinClosingActionItemIds.contains(id) || pinFadingOutItemIds.contains(id) || pinFadingInItemIds.contains(id)
+    }
 
-        withAnimation(.easeOut(duration: 0.24)) {
-            _ = pinFadingOutItemIds.insert(item.id)
+    private func transitionPinState(for item: TodoItem, pin: Bool) {
+        guard !isPinTransitioning(item.id) else { return }
+
+        var closeTransaction = Transaction()
+        closeTransaction.disablesAnimations = true
+        withTransaction(closeTransaction) {
+            _ = pinClosingActionItemIds.insert(item.id)
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-
-            withTransaction(transaction) {
-                _ = pinFadingOutItemIds.remove(item.id)
-                _ = pinFadingInItemIds.insert(item.id)
-
-                if pin {
-                    pinItem(item: item)
-                } else {
-                    unpinItem(item: item)
-                }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pinActionCloseDelay) {
+            withAnimation(.easeOut(duration: pinPositionFadeDuration)) {
+                _ = pinFadingOutItemIds.insert(item.id)
             }
 
-            DispatchQueue.main.async {
-                withAnimation(.easeIn(duration: 0.24)) {
-                    _ = pinFadingInItemIds.remove(item.id)
+            DispatchQueue.main.asyncAfter(deadline: .now() + pinPositionFadeDuration) {
+                var moveTransaction = Transaction()
+                moveTransaction.disablesAnimations = true
+
+                withTransaction(moveTransaction) {
+                    _ = pinFadingOutItemIds.remove(item.id)
+                    _ = pinFadingInItemIds.insert(item.id)
+
+                    if pin {
+                        pinItem(item: item)
+                    } else {
+                        unpinItem(item: item)
+                    }
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + pinTargetSettleDelay) {
+                    withAnimation(.easeIn(duration: pinPositionFadeDuration)) {
+                        _ = pinFadingInItemIds.remove(item.id)
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + pinPositionFadeDuration) {
+                        var cleanupTransaction = Transaction()
+                        cleanupTransaction.disablesAnimations = true
+                        withTransaction(cleanupTransaction) {
+                            _ = pinClosingActionItemIds.remove(item.id)
+                        }
+                    }
                 }
             }
         }
@@ -2095,6 +2136,7 @@ struct ContentView: View {
             NotificationHelper.cancelReminder(for: itemToDelete)
 
             if let index = items.firstIndex(where: { $0.id == itemToDelete.id }) {
+                TodoImageStore.shared.removeAllImages(for: itemToDelete.id)
                 items.remove(at: index)
             }
         }
